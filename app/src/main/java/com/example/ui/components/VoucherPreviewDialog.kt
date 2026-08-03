@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -160,19 +161,19 @@ fun VoucherPreviewDialog(
                     ) {
                         when (selectedPosition) {
                             PrintPosition.TOP -> {
-                                SingleMemoVoucherCard(state = state, validItems = validItems)
+                                RotatedVoucherCardWrapper(state = state, validItems = validItems)
                                 Spacer(modifier = Modifier.height(10.dp))
                                 EmptyPaperHalfPlaceholder()
                             }
                             PrintPosition.BOTTOM -> {
                                 EmptyPaperHalfPlaceholder()
                                 Spacer(modifier = Modifier.height(10.dp))
-                                SingleMemoVoucherCard(state = state, validItems = validItems)
+                                RotatedVoucherCardWrapper(state = state, validItems = validItems)
                             }
                             PrintPosition.BOTH -> {
-                                SingleMemoVoucherCard(state = state, validItems = validItems)
+                                RotatedVoucherCardWrapper(state = state, validItems = validItems)
                                 Spacer(modifier = Modifier.height(10.dp))
-                                SingleMemoVoucherCard(state = state, validItems = validItems)
+                                RotatedVoucherCardWrapper(state = state, validItems = validItems)
                             }
                         }
                     }
@@ -458,11 +459,45 @@ private fun SingleMemoVoucherCard(
 }
 
 @Composable
+private fun RotatedVoucherCardWrapper(
+    state: CurrentBillState,
+    validItems: List<BillItem>
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp)
+            .background(Color(0xFFFFFDF9), RoundedCornerShape(4.dp))
+            .padding(vertical = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .width(210.dp)
+                .height(310.dp)
+                .graphicsLayer {
+                    rotationZ = 90f
+                }
+        ) {
+            SingleMemoVoucherCard(state = state, validItems = validItems)
+        }
+    }
+}
+
+@Composable
 private fun EmptyPaperHalfPlaceholder() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
-            .background(Color.White)
-    )
+            .height(220.dp)
+            .background(Color(0xFFFBF9F4), RoundedCornerShape(4.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "খালি পেজ (ফাঁকা থাকবে)",
+            fontSize = 11.sp,
+            color = Color.LightGray,
+            fontWeight = FontWeight.Bold
+        )
+    }
 }
