@@ -175,18 +175,12 @@ object PrintUtils {
     ) {
         val maroonColor = Color.parseColor("#701B1B")
 
-        canvas.save()
-        canvas.translate(565f, startY + 12f)
-        canvas.rotate(90f)
-
-        val localStartY = 0f
-
         // Header Banner
         val headerPaint = Paint().apply {
             color = maroonColor
             style = Paint.Style.FILL
         }
-        val headerRect = RectF(20f, localStartY, 575f, localStartY + 48f)
+        val headerRect = RectF(20f, startY, 575f, startY + 48f)
         canvas.drawRect(headerRect, headerPaint)
 
         // Title
@@ -196,7 +190,7 @@ object PrintUtils {
             isFakeBoldText = true
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(centerName, 297.5f, localStartY + 27f, titleTextPaint)
+        canvas.drawText(centerName, 297.5f, startY + 27f, titleTextPaint)
 
         // Subtitle
         val subtitleTextPaint = Paint().apply {
@@ -204,7 +198,7 @@ object PrintUtils {
             textSize = 11f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(subtitle, 297.5f, localStartY + 43f, subtitleTextPaint)
+        canvas.drawText(subtitle, 297.5f, startY + 43f, subtitleTextPaint)
 
         // Sawtooth Teeth Bar
         val toothWidth = 10f
@@ -216,9 +210,9 @@ object PrintUtils {
         }
         while (toothX < 575f) {
             val path = android.graphics.Path().apply {
-                moveTo(toothX, localStartY + 48f)
-                lineTo(toothX + toothWidth / 2, localStartY + 48f + toothHeight)
-                lineTo(toothX + toothWidth, localStartY + 48f)
+                moveTo(toothX, startY + 48f)
+                lineTo(toothX + toothWidth / 2, startY + 48f + toothHeight)
+                lineTo(toothX + toothWidth, startY + 48f)
                 close()
             }
             canvas.drawPath(path, toothPaint)
@@ -226,12 +220,6 @@ object PrintUtils {
         }
 
         // Metadata Row
-        val metaPaintLeft = Paint().apply {
-            color = maroonColor
-            textSize = 11f
-            isFakeBoldText = true
-            textAlign = Paint.Align.LEFT
-        }
         val metaPaintRight = Paint().apply {
             color = maroonColor
             textSize = 11f
@@ -239,13 +227,12 @@ object PrintUtils {
             textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("বিল নম্বর : ........................", 35f, localStartY + 68f, metaPaintLeft)
-        canvas.drawText("তারিখ : $bnDate", 560f, localStartY + 68f, metaPaintRight)
+        canvas.drawText("তারিখ : $bnDate", 560f, startY + 68f, metaPaintRight)
 
         // TABLE GRID CONFIG
         val tableLeft = 35f
         val tableRight = 560f
-        val tableTop = localStartY + 78f
+        val tableTop = startY + 78f
         val colWidths = floatArrayOf(45f, 230f, 85f, 65f, 100f) // Total width = 525f
 
         // Table Header Background
@@ -267,10 +254,10 @@ object PrintUtils {
             currentX += colWidths[i]
         }
 
-        // Table Rows (Exactly 15 rows)
+        // Table Rows (Exactly 18 rows to fill the half-page)
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
-        val totalRows = 15
-        val rowHeight = 14f
+        val totalRows = 18
+        val rowHeight = 14.8f
         val gridBorderPaint = Paint().apply {
             color = maroonColor
             style = Paint.Style.STROKE
@@ -298,27 +285,27 @@ object PrintUtils {
             
             // Draw Sl No
             itemBoldPaint.textAlign = Paint.Align.CENTER
-            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 11f, itemBoldPaint)
+            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 11.5f, itemBoldPaint)
 
             if (r < validItems.size) {
                 val item = validItems[r]
                 // Name
                 itemBoldPaint.textAlign = Paint.Align.LEFT
-                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 11f, itemBoldPaint)
+                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 11.5f, itemBoldPaint)
 
                 // Qty
                 itemTextPaint.textAlign = Paint.Align.CENTER
                 val bnQty = BengaliUtils.toBengaliDigits(item.quantity)
-                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 11f, itemTextPaint)
+                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 11.5f, itemTextPaint)
 
                 // Rate
                 val bnRate = if (item.rate == "0" || item.rate.isBlank()) "" else BengaliUtils.toBengaliDigits(item.rate)
-                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 11f, itemTextPaint)
+                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 11.5f, itemTextPaint)
 
                 // Amount
                 itemBoldPaint.textAlign = Paint.Align.RIGHT
                 val bnAmount = if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(DecimalFormat("#,##0").format(item.amount))}/-"
-                canvas.drawText(bnAmount, tableRight - 6f, rowY + 11f, itemBoldPaint)
+                canvas.drawText(bnAmount, tableRight - 6f, rowY + 11.5f, itemBoldPaint)
             }
 
             // Row Dashed Bottom Line
@@ -362,7 +349,7 @@ object PrintUtils {
         }
 
         // FOOTER BELOW TABLE
-        val footerStartY = tableBottomY + 16f
+        val footerStartY = tableBottomY + 14f
         val footerPaint = Paint().apply {
             color = Color.parseColor("#2C1810")
             textSize = 9.5f
@@ -371,7 +358,7 @@ object PrintUtils {
         canvas.drawText("কথায় (টাকার পরিমাণ) : .......................................................................................... টাকা মাত্র।", 35f, footerStartY, footerPaint)
 
         // Signature Row
-        val sigY = footerStartY + 26f
+        val sigY = footerStartY + 22f
         canvas.drawText("(ক্রেতার স্বাক্ষর : _______________________", 35f, sigY, footerPaint)
 
         // Bottom Diamond Decor
@@ -380,9 +367,7 @@ object PrintUtils {
             textSize = 9.5f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("────────────────── ◆ ──────────────────", 297.5f, sigY + 16f, diamondPaint)
-
-        canvas.restore()
+        canvas.drawText("────────────────── ◆ ──────────────────", 297.5f, sigY + 14f, diamondPaint)
     }
 
     private fun sharePdfFile(context: Context, pdfFile: File, dateString: String) {
@@ -420,7 +405,7 @@ object PrintUtils {
         val bengaliTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
 
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
-        val totalRowsCount = 15
+        val totalRowsCount = 18
 
         val rowsHtml = StringBuilder()
         for (i in 0 until totalRowsCount) {
@@ -454,52 +439,49 @@ object PrintUtils {
         }
 
         val memoCardHtml = """
-            <div class="memo-half">
-                <div class="memo-rotated">
-                    <div class="header-banner">
-                        <h1>$centerName</h1>
-                        <p>$subtitle</p>
-                    </div>
-                    <div class="sawtooth-bar"></div>
+            <div class="memo-container">
+                <div class="header-banner">
+                    <h1>$centerName</h1>
+                    <p>$subtitle</p>
+                </div>
+                <div class="sawtooth-bar"></div>
 
-                    <div class="meta-row">
-                        <div>বিল নম্বর : ........................</div>
-                        <div>তারিখ : $bengaliDate</div>
-                    </div>
+                <div class="meta-row">
+                    <div>তারিখ : $bengaliDate</div>
+                </div>
 
-                    <div class="table-wrapper">
-                        <table class="memo-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 10%;">ক্রমিক নং</th>
-                                    <th style="width: 45%;">খাবারের নাম / বিবরণ</th>
-                                    <th style="width: 15%;">পরিমাণ</th>
-                                    <th style="width: 12%;">দর</th>
-                                    <th style="width: 18%;">টাকা</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                $rowsHtml
-                                <tr class="total-row">
-                                    <td colspan="4" class="total-label">মোট —</td>
-                                    <td class="total-amount">$bengaliTotal</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="table-wrapper">
+                    <table class="memo-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 10%;">ক্রমিক নং</th>
+                                <th style="width: 45%;">খাবারের নাম / বিবরণ</th>
+                                <th style="width: 15%;">পরিমাণ</th>
+                                <th style="width: 12%;">দর</th>
+                                <th style="width: 18%;">টাকা</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            $rowsHtml
+                            <tr class="total-row">
+                                <td colspan="4" class="total-label">মোট —</td>
+                                <td class="total-amount">$bengaliTotal</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-                    <div class="footer-section">
-                        <div class="words-row">
-                            কথায় (টাকার পরিমাণ) : .......................................................................................... টাকা মাত্র।
+                <div class="footer-section">
+                    <div class="words-row">
+                        কথায় (টাকার পরিমাণ) : .......................................................................................... টাকা মাত্র।
+                    </div>
+                    <div class="signatures-row">
+                        <div class="sig-box">
+                            (ক্রেতার স্বাক্ষর : <span class="sig-line"></span>
                         </div>
-                        <div class="signatures-row">
-                            <div class="sig-box">
-                                (ক্রেতার স্বাক্ষর : <span class="sig-line"></span>
-                            </div>
-                        </div>
-                        <div class="bottom-diamond">
-                            ────────────────── ◆ ──────────────────
-                        </div>
+                    </div>
+                    <div class="bottom-diamond">
+                        ────────────────── ◆ ──────────────────
                     </div>
                 </div>
             </div>
@@ -520,6 +502,7 @@ object PrintUtils {
             """.trimIndent()
             PrintPosition.BOTH -> """
                 $memoCardHtml
+                <div style="height: 5mm;"></div>
                 $memoCardHtml
             """.trimIndent()
         }
@@ -532,7 +515,7 @@ object PrintUtils {
                 <style>
                     @page {
                         size: A4 portrait;
-                        margin: 0;
+                        margin: 5mm;
                     }
                     body {
                         font-family: 'SolaimanLipi', 'Kalpurush', 'Noto Sans Bengali', Arial, sans-serif;
@@ -543,43 +526,39 @@ object PrintUtils {
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
-                    .memo-half {
-                        width: 210mm;
-                        height: 148mm;
-                        position: relative;
+                    .memo-container {
+                        width: 100%;
+                        max-width: 195mm;
+                        height: 138mm;
+                        margin: 0 auto;
+                        border: none;
+                        background: #FFFDF9;
+                        padding-bottom: 8px;
                         box-sizing: border-box;
-                        overflow: hidden;
                     }
                     .empty-half {
-                        width: 210mm;
-                        height: 148mm;
-                    }
-                    .memo-rotated {
-                        width: 138mm;
-                        height: 200mm;
-                        position: absolute;
-                        top: 4mm;
-                        left: 204mm;
-                        transform: rotate(90deg);
-                        transform-origin: top left;
-                        background: #FFFDF9;
-                        box-sizing: border-box;
+                        width: 100%;
+                        max-width: 195mm;
+                        height: 138mm;
+                        margin: 0 auto;
+                        border: none;
+                        background: transparent;
                     }
                     .header-banner {
                         background-color: #701B1B;
                         color: #FFFFFF;
                         text-align: center;
-                        padding: 6px 4px 4px 4px;
+                        padding: 8px 6px 6px 6px;
                     }
                     .header-banner h1 {
                         margin: 0;
-                        font-size: 20px;
+                        font-size: 22px;
                         font-weight: bold;
                         letter-spacing: 0.5px;
                     }
                     .header-banner p {
                         margin: 2px 0 0 0;
-                        font-size: 11px;
+                        font-size: 12px;
                         font-weight: normal;
                     }
                     .sawtooth-bar {
@@ -601,7 +580,7 @@ object PrintUtils {
                     }
                     .meta-row {
                         display: flex;
-                        justify-content: space-between;
+                        justify-content: flex-end;
                         align-items: center;
                         padding: 4px 16px;
                         font-size: 12px;

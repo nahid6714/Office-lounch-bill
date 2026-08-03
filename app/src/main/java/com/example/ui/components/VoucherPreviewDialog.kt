@@ -161,19 +161,19 @@ fun VoucherPreviewDialog(
                     ) {
                         when (selectedPosition) {
                             PrintPosition.TOP -> {
-                                RotatedVoucherCardWrapper(state = state, validItems = validItems)
+                                SingleMemoVoucherCard(state = state, validItems = validItems)
                                 Spacer(modifier = Modifier.height(10.dp))
                                 EmptyPaperHalfPlaceholder()
                             }
                             PrintPosition.BOTTOM -> {
                                 EmptyPaperHalfPlaceholder()
                                 Spacer(modifier = Modifier.height(10.dp))
-                                RotatedVoucherCardWrapper(state = state, validItems = validItems)
+                                SingleMemoVoucherCard(state = state, validItems = validItems)
                             }
                             PrintPosition.BOTH -> {
-                                RotatedVoucherCardWrapper(state = state, validItems = validItems)
+                                SingleMemoVoucherCard(state = state, validItems = validItems)
                                 Spacer(modifier = Modifier.height(10.dp))
-                                RotatedVoucherCardWrapper(state = state, validItems = validItems)
+                                SingleMemoVoucherCard(state = state, validItems = validItems)
                             }
                         }
                     }
@@ -275,15 +275,9 @@ private fun SingleMemoVoucherCard(
                 // Metadata Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "বিল নম্বর : ........................",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaroonHeaderColor
-                    )
                     Text(
                         text = "তারিখ: ${BengaliUtils.toBengaliDigits(state.dateString)}",
                         fontSize = 11.sp,
@@ -295,7 +289,7 @@ private fun SingleMemoVoucherCard(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 // Table Grid
-                val totalRows = 15
+                val totalRows = 18
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -459,37 +453,11 @@ private fun SingleMemoVoucherCard(
 }
 
 @Composable
-private fun RotatedVoucherCardWrapper(
-    state: CurrentBillState,
-    validItems: List<BillItem>
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(220.dp)
-            .background(Color(0xFFFFFDF9), RoundedCornerShape(4.dp))
-            .padding(vertical = 4.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .width(210.dp)
-                .height(310.dp)
-                .graphicsLayer {
-                    rotationZ = 90f
-                }
-        ) {
-            SingleMemoVoucherCard(state = state, validItems = validItems)
-        }
-    }
-}
-
-@Composable
 private fun EmptyPaperHalfPlaceholder() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
+            .height(180.dp)
             .background(Color(0xFFFBF9F4), RoundedCornerShape(4.dp)),
         contentAlignment = Alignment.Center
     ) {
