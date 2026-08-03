@@ -156,32 +156,22 @@ fun VoucherPreviewDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color.White, RoundedCornerShape(6.dp))
-                            .border(1.dp, Color(0xFFC8B8B8), RoundedCornerShape(6.dp))
                             .padding(8.dp)
                     ) {
                         when (selectedPosition) {
                             PrintPosition.TOP -> {
                                 SingleMemoVoucherCard(state = state, validItems = validItems)
                                 Spacer(modifier = Modifier.height(10.dp))
-                                EmptyPaperHalfPlaceholder(text = "📄 A4 নিচের অংশ (খালি থাকবে - পরবর্তী ব্যবহারের জন্য)")
+                                EmptyPaperHalfPlaceholder()
                             }
                             PrintPosition.BOTTOM -> {
-                                EmptyPaperHalfPlaceholder(text = "📄 A4 উপরের অংশ (খালি থাকবে)")
+                                EmptyPaperHalfPlaceholder()
                                 Spacer(modifier = Modifier.height(10.dp))
                                 SingleMemoVoucherCard(state = state, validItems = validItems)
                             }
                             PrintPosition.BOTH -> {
                                 SingleMemoVoucherCard(state = state, validItems = validItems)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "✂ -------------------- এখান থেকে কাটুন --------------------",
-                                    fontSize = 11.sp,
-                                    color = MaroonHeaderColor,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(10.dp))
                                 SingleMemoVoucherCard(state = state, validItems = validItems)
                             }
                         }
@@ -242,9 +232,7 @@ private fun SingleMemoVoucherCard(
         colors = CardDefaults.cardColors(containerColor = CreamPaperBg)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.5.dp, MaroonHeaderColor, RoundedCornerShape(6.dp))
+            modifier = Modifier.fillMaxWidth()
         ) {
             // Header Banner
             Box(
@@ -286,9 +274,15 @@ private fun SingleMemoVoucherCard(
                 // Metadata Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Text(
+                        text = "বিল নম্বর : ........................",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonHeaderColor
+                    )
                     Text(
                         text = "তারিখ: ${BengaliUtils.toBengaliDigits(state.dateString)}",
                         fontSize = 11.sp,
@@ -297,20 +291,10 @@ private fun SingleMemoVoucherCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
-                Canvas(modifier = Modifier.fillMaxWidth().height(1.dp)) {
-                    drawLine(
-                        color = MaroonHeaderColor,
-                        start = Offset(0f, 0f),
-                        end = Offset(size.width, 0f),
-                        strokeWidth = 1.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 4f), 0f)
-                    )
-                }
                 Spacer(modifier = Modifier.height(6.dp))
 
                 // Table Grid
-                val totalRows = maxOf(15, validItems.size)
+                val totalRows = 15
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -474,22 +458,11 @@ private fun SingleMemoVoucherCard(
 }
 
 @Composable
-private fun EmptyPaperHalfPlaceholder(text: String) {
+private fun EmptyPaperHalfPlaceholder() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
-            .background(Color(0x0A000000), shape = RoundedCornerShape(6.dp))
-            .border(1.5.dp, Color(0xFFC0B0B0), shape = RoundedCornerShape(6.dp)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF807070),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(16.dp)
-        )
-    }
+            .height(180.dp)
+            .background(Color.White)
+    )
 }

@@ -130,14 +130,7 @@ object PrintUtils {
                         purchaserLabel = purchaserLabel
                     )
 
-                    // Middle Scissor Cut Line
-                    val scissorPaint = Paint().apply {
-                        color = Color.parseColor("#701B1B")
-                        textSize = 10f
-                        textAlign = Paint.Align.CENTER
-                    }
-                    canvas.drawText("✂ ------------------------------------------------------------------------------------------------------------------", 297f, 418f, scissorPaint)
-
+                    // Middle Space (No cut line)
                     // Bottom Voucher
                     drawSingleVoucherOnCanvas(
                         canvas = canvas,
@@ -181,16 +174,6 @@ object PrintUtils {
         purchaserLabel: String
     ) {
         val maroonColor = Color.parseColor("#701B1B")
-
-        // Outer Container Border for this half
-        val borderPaint = Paint().apply {
-            color = maroonColor
-            style = Paint.Style.STROKE
-            strokeWidth = 1.5f
-        }
-        val endY = startY + 395f
-        val containerRect = RectF(20f, startY, 575f, endY)
-        canvas.drawRoundRect(containerRect, 6f, 6f, borderPaint)
 
         // Header Banner
         val headerPaint = Paint().apply {
@@ -237,27 +220,26 @@ object PrintUtils {
         }
 
         // Metadata Row
-        val metaPaint = Paint().apply {
+        val metaPaintLeft = Paint().apply {
+            color = maroonColor
+            textSize = 11f
+            isFakeBoldText = true
+            textAlign = Paint.Align.LEFT
+        }
+        val metaPaintRight = Paint().apply {
             color = maroonColor
             textSize = 11f
             isFakeBoldText = true
             textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("তারিখ : $bnDate", 560f, startY + 72f, metaPaint)
-
-        // Dashed Separator Line
-        val dashPaint = Paint().apply {
-            color = maroonColor
-            strokeWidth = 1f
-            pathEffect = android.graphics.DashPathEffect(floatArrayOf(5f, 3f), 0f)
-        }
-        canvas.drawLine(35f, startY + 80f, 560f, startY + 80f, dashPaint)
+        canvas.drawText("বিল নম্বর : ........................", 35f, startY + 72f, metaPaintLeft)
+        canvas.drawText("তারিখ : $bnDate", 560f, startY + 72f, metaPaintRight)
 
         // TABLE GRID CONFIG
         val tableLeft = 35f
         val tableRight = 560f
-        val tableTop = startY + 90f
+        val tableTop = startY + 84f
         val colWidths = floatArrayOf(45f, 230f, 85f, 65f, 100f) // Total width = 525f
 
         // Table Header Background
@@ -279,9 +261,9 @@ object PrintUtils {
             currentX += colWidths[i]
         }
 
-        // Table Rows (15 rows matching reference picture)
+        // Table Rows (Exactly 15 rows)
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
-        val totalRows = maxOf(15, validItems.size)
+        val totalRows = 15
         val rowHeight = 15f
         val gridBorderPaint = Paint().apply {
             color = maroonColor
@@ -430,7 +412,7 @@ object PrintUtils {
         val bengaliTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
 
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
-        val totalRowsCount = maxOf(15, validItems.size)
+        val totalRowsCount = 15
 
         val rowsHtml = StringBuilder()
         for (i in 0 until totalRowsCount) {
@@ -472,10 +454,9 @@ object PrintUtils {
                 <div class="sawtooth-bar"></div>
 
                 <div class="meta-row">
-                    <div></div>
+                    <div>বিল নম্বর : ........................</div>
                     <div>তারিখ : $bengaliDate</div>
                 </div>
-                <div class="dashed-divider"></div>
 
                 <div class="table-wrapper">
                     <table class="memo-table">
@@ -515,9 +496,7 @@ object PrintUtils {
         """.trimIndent()
 
         val emptyHalfHtml = """
-            <div class="empty-half">
-                <div class="empty-text">A4 কাগজের এই অংশটি খালি রাখা হয়েছে (পরবর্তী ব্যবহারের জন্য)</div>
-            </div>
+            <div class="empty-half"></div>
         """.trimIndent()
 
         val contentBodyHtml = when (position) {
@@ -531,7 +510,7 @@ object PrintUtils {
             """.trimIndent()
             PrintPosition.BOTH -> """
                 $memoCardHtml
-                <div class="scissor-cut-line">✂ -----------------------------------------------------------------------------------------------------------------------</div>
+                <div style="height: 10px;"></div>
                 $memoCardHtml
             """.trimIndent()
         }
@@ -560,8 +539,7 @@ object PrintUtils {
                         max-width: 195mm;
                         height: 136mm;
                         margin: 0 auto;
-                        border: 2px solid #701B1B;
-                        border-radius: 6px;
+                        border: none;
                         background: #FFFDF9;
                         padding-bottom: 8px;
                         box-sizing: border-box;
@@ -571,13 +549,8 @@ object PrintUtils {
                         max-width: 195mm;
                         height: 136mm;
                         margin: 0 auto;
-                        border: 2px dashed #D0C0C0;
-                        border-radius: 6px;
-                        box-sizing: border-box;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        background: rgba(0,0,0,0.01);
+                        border: none;
+                        background: transparent;
                     }
                     .empty-text {
                         color: #A09090;
