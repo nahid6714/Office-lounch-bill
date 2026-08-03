@@ -7,6 +7,8 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import android.os.CancellationSignal
+import android.os.ParcelFileDescriptor
 import android.print.PageRange
 import android.print.PrintAttributes
 import android.print.PrintDocumentAdapter
@@ -60,7 +62,7 @@ object PrintUtils {
                 
                 val builder = PrintAttributes.Builder()
                 builder.setMediaSize(PrintAttributes.MediaSize.ISO_A4.asPortrait())
-                builder.setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                builder.setMinMargins(PrintAttributes.Margins(0, 0, 0, 0))
                 
                 printManager?.print(jobName, printAdapter, builder.build())
             }
@@ -76,48 +78,64 @@ object PrintUtils {
         dateString: String,
         items: List<BillItem>,
         totalAmount: Double,
-        purchaserLabel: String = "ক্রয়কারীর স্বাক্ষর",
+        purchaserLabel: String = "ক্রেতার স্বাক্ষর",
         approverLabel: String = "অনুমোদনকারীর স্বাক্ষর",
         position: PrintPosition = PrintPosition.TOP
     ) {
-        try {
-            val pdfDocument = PdfDocument()
-            val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-            val page = pdfDocument.startPage(pageInfo)
-            val canvas = page.canvas
+        val htmlContent = generateHtmlVoucher(
+            centerName = centerName,
+            subtitle = subtitle,
+            dateString = dateString,
+            items = items,
+            totalAmount = totalAmount,
+            purchaserLabel = purchaserLabel,
+            approverLabel = approverLabel,
+            position = position
+        )
 
-            val bgPaint = Paint().apply {
-                color = Color.parseColor("#FFFDF9")
-                style = Paint.Style.FILL
+        val webView = WebView(context)
+        val pageWidth = 794 // A4 210mm in px at 96dpi
+        val pageHeight = 1123 // A4 297mm in px at 96dpi
+
+        webView.layoutParams = android.view.ViewGroup.LayoutParams(pageWidth, pageHeight)
+        webView.measure(
+            android.view.View.MeasureSpec.makeMeasureSpec(pageWidth, android.view.View.MeasureSpec.EXACTLY),
+            android.view.View.MeasureSpec.makeMeasureSpec(pageHeight, android.view.View.MeasureSpec.EXACTLY)
+        )
+        webView.layout(0, 0, pageWidth, pageHeight)
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                try {
+                    val pdfDocument = PdfDocument()
+                    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+                    val page = pdfDocument.startPage(pageInfo)
+                    val canvas = page.canvas
+
+                    val scaleX = 595f / pageWidth.toFloat()
+                    val scaleY = 842f / pageHeight.toFloat()
+                    canvas.scale(scaleX, scaleY)
+
+                    view.draw(canvas)
+                    pdfDocument.finishPage(page)
+
+                    val cacheDir = File(context.cacheDir, "food_bills").apply { mkdirs() }
+                    val pdfFile = File(cacheDir, "Food_Bill_${dateString.replace("/", "-")}.pdf")
+                    if (pdfFile.exists()) pdfFile.delete()
+
+                    FileOutputStream(pdfFile).use { out ->
+                        pdfDocument.writeTo(out)
+                    }
+                    pdfDocument.close()
+
+                    sharePdfFile(context, pdfFile, dateString)
+                } catch (e: Exception) {
+                    Toast.makeText(context, "পিডিএফ ফাইল তৈরি ব্যর্থ: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                }
             }
-            canvas.drawRect(0f, 0f, 595f, 842f, bgPaint)
-
-            when (position) {
-                PrintPosition.TOP -> {
-                    drawSingleVoucherOnCanvas(canvas, 15f, centerName, subtitle, dateString, items, totalAmount, purchaserLabel)
-                }
-                PrintPosition.BOTTOM -> {
-                    drawSingleVoucherOnCanvas(canvas, 430f, centerName, subtitle, dateString, items, totalAmount, purchaserLabel)
-                }
-                PrintPosition.BOTH -> {
-                    drawSingleVoucherOnCanvas(canvas, 15f, centerName, subtitle, dateString, items, totalAmount, purchaserLabel)
-                    drawSingleVoucherOnCanvas(canvas, 430f, centerName, subtitle, dateString, items, totalAmount, purchaserLabel)
-                }
-            }
-
-            pdfDocument.finishPage(page)
-
-            val cacheDir = File(context.cacheDir, "food_bills").apply { mkdirs() }
-            val pdfFile = File(cacheDir, "Food_Bill_${dateString.replace("/", "-")}.pdf")
-            if (pdfFile.exists()) pdfFile.delete()
-
-            FileOutputStream(pdfFile).use { out -> pdfDocument.writeTo(out) }
-            pdfDocument.close()
-
-            sharePdfFile(context, pdfFile, dateString)
-        } catch (e: Exception) {
-            Toast.makeText(context, "পিডিএফ ফাইল তৈরি ব্যর্থ: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
         }
+
+        webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
     }
 
     private fun drawSingleVoucherOnCanvas(
@@ -130,10 +148,13 @@ object PrintUtils {
         totalAmount: Double,
         purchaserLabel: String
     ) {
-        val maroonColor = Color.parseColor("#701B1B")
+        val maroonColor = Color.parseColor("#5A0000")
 
         canvas.save()
-        val localStartY = startY
+        canvas.translate(575f, startY + 8f)
+        canvas.rotate(90f)
+
+        val localStartY = 0f
 
         // Header Banner
         val headerPaint = Paint().apply {
@@ -394,7 +415,7 @@ object PrintUtils {
 
         val memoCardHtml = """
             <div class="memo-half">
-                <div class="memo-container">
+                <div class="memo-rotated">
                     <div class="header-banner">
                         <h1>$centerName</h1>
                         <p>$subtitle</p>
@@ -410,8 +431,8 @@ object PrintUtils {
                             <thead>
                                 <tr>
                                     <th style="width: 10%;">ক্রমিক নং</th>
-                                    <th style="width: 44%;">খাবারের নাম / বিবরণ</th>
-                                    <th style="width: 16%;">পরিমাণ</th>
+                                    <th style="width: 45%;">খাবারের নাম / বিবরণ</th>
+                                    <th style="width: 15%;">পরিমাণ</th>
                                     <th style="width: 12%;">দর</th>
                                     <th style="width: 18%;">টাকা</th>
                                 </tr>
@@ -432,7 +453,7 @@ object PrintUtils {
                         </div>
                         <div class="signatures-row">
                             <div class="sig-box">
-                                (ক্রেতার স্বাক্ষর : <span class="sig-line"></span>)
+                                (ক্রেতার স্বাক্ষর : <span class="sig-line"></span>
                             </div>
                         </div>
                     </div>
@@ -489,10 +510,14 @@ object PrintUtils {
                         width: 210mm;
                         height: 148mm;
                     }
-                    .memo-container {
-                        width: 198mm;
-                        height: 142mm;
-                        margin: 3mm auto;
+                    .memo-rotated {
+                        width: 142mm;
+                        height: 202mm;
+                        position: absolute;
+                        top: 3mm;
+                        left: 205mm;
+                        transform: rotate(90deg);
+                        transform-origin: top left;
                         background: #FFFDF9;
                         box-sizing: border-box;
                     }
@@ -539,18 +564,22 @@ object PrintUtils {
                         font-weight: bold;
                         color: #701B1B;
                     }
+                    .dashed-divider {
+                        border-bottom: 1.2px dashed #701B1B;
+                        margin: 0 16px 8px 16px;
+                    }
                     .table-wrapper {
                         padding: 0 16px;
                     }
                     .memo-table {
                         width: 100%;
                         border-collapse: collapse;
-                        border: 1.5px solid #701B1B;
-                        border-radius: 2px;
+                        border: 1.8px solid #5A0000;
+                        border-radius: 4px;
                         overflow: hidden;
                     }
                     .memo-table th {
-                        background-color: #701B1B;
+                        background-color: #5A0000;
                         color: #FFFFFF;
                         font-weight: bold;
                         font-size: 11px;
@@ -562,7 +591,7 @@ object PrintUtils {
                         border-right: none;
                     }
                     .memo-table td {
-                        border-right: 1.5px solid #701B1B;
+                        border-right: 1.5px solid #5A0000;
                         border-bottom: 1px dashed #C8B8B8;
                         padding: 5px 5px;
                         font-size: 11.5px;
@@ -573,27 +602,27 @@ object PrintUtils {
                         border-right: none;
                     }
                     .sl-col { text-align: center; font-weight: bold; width: 10%; }
-                    .item-col { text-align: left; font-weight: bold; width: 44%; }
-                    .qty-col { text-align: center; width: 16%; }
+                    .item-col { text-align: left; font-weight: bold; width: 45%; }
+                    .qty-col { text-align: center; width: 15%; }
                     .rate-col { text-align: center; width: 12%; }
                     .amount-col { text-align: right; font-weight: bold; width: 18%; }
 
                     .total-row td {
-                        border-top: 1.5px solid #701B1B;
+                        border-top: 1.8px solid #5A0000;
                         border-bottom: none;
                         font-weight: bold;
                     }
                     .total-label {
                         text-align: right;
                         font-size: 12px;
-                        color: #701B1B;
+                        color: #5A0000;
                         padding-right: 10px;
-                        border-right: 1.5px solid #701B1B;
+                        border-right: 1.5px solid #5A0000;
                     }
                     .total-amount {
                         text-align: right;
                         font-size: 13px;
-                        color: #701B1B;
+                        color: #5A0000;
                         font-weight: bold;
                     }
                     .footer-section {
