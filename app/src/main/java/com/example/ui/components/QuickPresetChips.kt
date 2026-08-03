@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import com.example.util.BengaliUtils
 import com.example.util.QuickPreset
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun QuickPresetChips(
     presets: List<QuickPreset>,
@@ -110,14 +111,15 @@ fun QuickPresetChips(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag("quick_preset_chips_row")
+                .padding(horizontal = 4.dp)
+                .testTag("quick_preset_chips_flow")
         ) {
-            items(presets) { preset ->
+            presets.forEach { preset ->
                 PresetChip(
                     preset = preset,
                     onClick = {
@@ -131,34 +133,32 @@ fun QuickPresetChips(
             }
 
             // Quick Add Chip at the end
-            item {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFFE8D7C8),
-                    modifier = Modifier
-                        .clickable { showManageDialog = true }
-                        .testTag("add_custom_chip")
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFE8D7C8),
+                modifier = Modifier
+                    .clickable { showManageDialog = true }
+                    .testTag("add_custom_chip")
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "নতুন আইটেম",
-                            tint = MaroonHeaderColor,
-                            modifier = Modifier
-                                .height(14.dp)
-                                .width(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "+ নতুন আইটেম",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaroonHeaderColor
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "নতুন আইটেম",
+                        tint = MaroonHeaderColor,
+                        modifier = Modifier
+                            .height(14.dp)
+                            .width(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "+ নতুন আইটেম",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonHeaderColor
+                    )
                 }
             }
         }
@@ -197,6 +197,7 @@ fun ManageQuickPresetsDialog(
     onRemovePreset: (preset: QuickPreset) -> Unit,
     onResetDefaults: () -> Unit
 ) {
+    var editingPreset by remember { mutableStateOf<QuickPreset?>(null) }
     var newItemName by remember { mutableStateOf("") }
     var newItemQtyVal by remember { mutableStateOf("") }
     var selectedUnit by remember { mutableStateOf("কেজি") }
@@ -207,9 +208,9 @@ fun ManageQuickPresetsDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "দ্রুত আইটেম কাস্টমাইজ করুন",
+                text = "দ্রুত আইটেম ব্যবস্থাপনা (যোগ/সম্পাদনা/ডিলিট)",
                 fontWeight = FontWeight.Bold,
-                fontSize = 17.sp,
+                fontSize = 16.sp,
                 color = MaroonHeaderColor
             )
         },
@@ -220,10 +221,10 @@ fun ManageQuickPresetsDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "নতুন দ্রুত আইটেম যোগ করুন:",
+                    text = if (editingPreset != null) "‘${editingPreset!!.name}’ আইটেম সম্পাদনা করুন:" else "নতুন দ্রুত আইটেম যোগ করুন:",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.DarkGray
+                    color = if (editingPreset != null) MaroonHeaderColor else Color.DarkGray
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -316,31 +317,65 @@ fun ManageQuickPresetsDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                Button(
-                    onClick = {
-                        if (newItemName.isNotBlank()) {
-                            onAddPreset(newItemName.trim(), formattedQty)
-                            newItemName = ""
-                            newItemQtyVal = ""
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(42.dp)
-                        .testTag("add_custom_preset_submit"),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaroonHeaderColor),
-                    shape = RoundedCornerShape(8.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.height(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("তালিকায় যোগ করুন", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    if (editingPreset != null) {
+                        Button(
+                            onClick = {
+                                editingPreset = null
+                                newItemName = ""
+                                newItemQtyVal = ""
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("বাতিল", fontSize = 12.sp)
+                        }
+                    }
+
+                    Button(
+                        onClick = {
+                            if (newItemName.isNotBlank()) {
+                                if (editingPreset != null && editingPreset!!.name != newItemName.trim()) {
+                                    onRemovePreset(editingPreset!!)
+                                }
+                                onAddPreset(newItemName.trim(), formattedQty)
+                                editingPreset = null
+                                newItemName = ""
+                                newItemQtyVal = ""
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(42.dp)
+                            .testTag("add_custom_preset_submit"),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonHeaderColor),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            if (editingPreset != null) Icons.Default.Edit else Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.height(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            if (editingPreset != null) "আইটেম আপডেট করুন" else "তালিকায় যোগ করুন",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "বর্তমান দ্রুত আইটেমসমূহ (${presets.size} টি):",
-                    fontSize = 13.sp,
+                    text = "বর্তমান দ্রুত আইটেমসমূহ (${presets.size} টি) [সম্পাদনা বা ডিলিট করতে ক্লিক করুন]:",
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.DarkGray
                 )
@@ -353,9 +388,10 @@ fun ManageQuickPresetsDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     presets.forEach { preset ->
+                        val isEditingThis = editingPreset == preset
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFF2E6DC),
+                            color = if (isEditingThis) MaroonHeaderColor else Color(0xFFF2E6DC),
                             modifier = Modifier.testTag("manage_preset_chip_${preset.name}")
                         ) {
                             Row(
@@ -366,14 +402,38 @@ fun ManageQuickPresetsDialog(
                                     text = "${preset.name}${if (preset.defaultQty.isNotBlank()) " (${preset.defaultQty})" else ""}",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaroonTextColor
+                                    color = if (isEditingThis) Color.White else MaroonTextColor
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 IconButton(
-                                    onClick = { onRemovePreset(preset) },
+                                    onClick = {
+                                        editingPreset = preset
+                                        newItemName = preset.name
+                                        newItemQtyVal = preset.defaultQty
+                                    },
                                     modifier = Modifier
-                                        .height(20.dp)
-                                        .width(20.dp)
+                                        .height(22.dp)
+                                        .width(22.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "সম্পাদনা",
+                                        tint = if (isEditingThis) Color.White else MaroonHeaderColor,
+                                        modifier = Modifier.height(13.dp)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        if (editingPreset == preset) {
+                                            editingPreset = null
+                                            newItemName = ""
+                                            newItemQtyVal = ""
+                                        }
+                                        onRemovePreset(preset)
+                                    },
+                                    modifier = Modifier
+                                        .height(22.dp)
+                                        .width(22.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
