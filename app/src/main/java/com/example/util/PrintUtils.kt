@@ -186,7 +186,7 @@ object PrintUtils {
             color = maroonColor
             style = Paint.Style.FILL
         }
-        val headerRect = RectF(15f, localStartY, 540f, localStartY + 44f)
+        val headerRect = RectF(15f, localStartY, 565f, localStartY + 44f)
         canvas.drawRect(headerRect, headerPaint)
 
         // Title
@@ -196,7 +196,7 @@ object PrintUtils {
             isFakeBoldText = true
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(centerName, 277.5f, localStartY + 25f, titleTextPaint)
+        canvas.drawText(centerName, 290f, localStartY + 25f, titleTextPaint)
 
         // Subtitle
         val subtitleTextPaint = Paint().apply {
@@ -204,7 +204,7 @@ object PrintUtils {
             textSize = 11f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(subtitle, 277.5f, localStartY + 39f, subtitleTextPaint)
+        canvas.drawText(subtitle, 290f, localStartY + 39f, subtitleTextPaint)
 
         // Sawtooth Teeth Bar
         val toothWidth = 10f
@@ -214,7 +214,7 @@ object PrintUtils {
             color = maroonColor
             style = Paint.Style.FILL
         }
-        while (toothX < 540f) {
+        while (toothX < 565f) {
             val path = android.graphics.Path().apply {
                 moveTo(toothX, localStartY + 44f)
                 lineTo(toothX + toothWidth / 2, localStartY + 44f + toothHeight)
@@ -233,13 +233,13 @@ object PrintUtils {
             textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("তারিখ : $bnDate", 525f, localStartY + 62f, metaPaintRight)
+        canvas.drawText("তারিখ : $bnDate", 565f, localStartY + 62f, metaPaintRight)
 
         // TABLE GRID CONFIG
-        val tableLeft = 25f
-        val tableRight = 525f
+        val tableLeft = 15f
+        val tableRight = 565f
         val tableTop = localStartY + 70f
-        val colWidths = floatArrayOf(45f, 215f, 80f, 60f, 100f) // Total width = 500f
+        val colWidths = floatArrayOf(45f, 240f, 90f, 65f, 110f) // Total width = 550f
 
         // Table Header Background
         val tableHeaderRect = RectF(tableLeft, tableTop, tableRight, tableTop + 18f)
@@ -260,10 +260,10 @@ object PrintUtils {
             currentX += colWidths[i]
         }
 
-        // Table Rows (Maximum 14 rows with larger height)
+        // Table Rows (Exactly 14 rows filling half-page height)
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
         val totalRows = 14
-        val rowHeight = 18.5f
+        val rowHeight = 22.5f
         val gridBorderPaint = Paint().apply {
             color = maroonColor
             style = Paint.Style.STROKE
@@ -291,27 +291,27 @@ object PrintUtils {
             
             // Draw Sl No
             itemBoldPaint.textAlign = Paint.Align.CENTER
-            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 13.5f, itemBoldPaint)
+            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 15.5f, itemBoldPaint)
 
             if (r < validItems.size) {
                 val item = validItems[r]
                 // Name
                 itemBoldPaint.textAlign = Paint.Align.LEFT
-                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 13.5f, itemBoldPaint)
+                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 15.5f, itemBoldPaint)
 
                 // Qty
                 itemTextPaint.textAlign = Paint.Align.CENTER
                 val bnQty = BengaliUtils.toBengaliDigits(item.quantity)
-                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 13.5f, itemTextPaint)
+                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 15.5f, itemTextPaint)
 
                 // Rate
                 val bnRate = if (item.rate == "0" || item.rate.isBlank()) "" else BengaliUtils.toBengaliDigits(item.rate)
-                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 13.5f, itemTextPaint)
+                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 15.5f, itemTextPaint)
 
                 // Amount
                 itemBoldPaint.textAlign = Paint.Align.RIGHT
                 val bnAmount = if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(DecimalFormat("#,##0").format(item.amount))}/-"
-                canvas.drawText(bnAmount, tableRight - 6f, rowY + 13.5f, itemBoldPaint)
+                canvas.drawText(bnAmount, tableRight - 6f, rowY + 15.5f, itemBoldPaint)
             }
 
             // Row Dashed Bottom Line
@@ -355,25 +355,17 @@ object PrintUtils {
         }
 
         // FOOTER BELOW TABLE
-        val footerStartY = tableBottomY + 13f
+        val footerStartY = tableBottomY + 14f
         val footerPaint = Paint().apply {
             color = Color.parseColor("#2C1810")
             textSize = 9.5f
         }
 
-        canvas.drawText("কথায় (টাকার পরিমাণ) : .......................................................................................... টাকা মাত্র।", 25f, footerStartY, footerPaint)
+        canvas.drawText("কথায় (টাকার পরিমাণ) : .......................................................................................... টাকা মাত্র।", 15f, footerStartY, footerPaint)
 
         // Signature Row
-        val sigY = footerStartY + 22f
-        canvas.drawText("(ক্রেতার স্বাক্ষর : _______________________", 25f, sigY, footerPaint)
-
-        // Bottom Diamond Decor
-        val diamondPaint = Paint().apply {
-            color = maroonColor
-            textSize = 9.5f
-            textAlign = Paint.Align.CENTER
-        }
-        canvas.drawText("────────────────── ◆ ──────────────────", 277.5f, sigY + 14f, diamondPaint)
+        val sigY = footerStartY + 24f
+        canvas.drawText("(ক্রেতার স্বাক্ষর : _______________________", 15f, sigY, footerPaint)
 
         canvas.restore()
     }
@@ -488,9 +480,6 @@ object PrintUtils {
                             <div class="sig-box">
                                 (ক্রেতার স্বাক্ষর : <span class="sig-line"></span>
                             </div>
-                        </div>
-                        <div class="bottom-diamond">
-                            ────────────────── ◆ ──────────────────
                         </div>
                     </div>
                 </div>
@@ -629,10 +618,10 @@ object PrintUtils {
                     .memo-table td {
                         border-right: 1px solid #701B1B;
                         border-bottom: 1px dashed #C8B8B8;
-                        padding: 3px 5px;
+                        padding: 5px 5px;
                         font-size: 11.5px;
                         color: #2C1810;
-                        height: 18px;
+                        height: 24px;
                     }
                     .memo-table td:last-child {
                         border-right: none;
@@ -685,13 +674,6 @@ object PrintUtils {
                         width: 140px;
                         border-bottom: 1px solid #701B1B;
                         margin-left: 6px;
-                    }
-                    .bottom-diamond {
-                        text-align: center;
-                        margin-top: 12px;
-                        color: #701B1B;
-                        font-size: 10px;
-                        letter-spacing: 2px;
                     }
                 </style>
             </head>
