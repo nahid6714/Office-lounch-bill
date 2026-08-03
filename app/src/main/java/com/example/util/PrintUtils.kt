@@ -2,10 +2,6 @@ package com.example.util
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.RectF
-import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
@@ -13,20 +9,18 @@ import android.print.PageRange
 import android.print.PrintAttributes
 import android.print.PrintDocumentAdapter
 import android.print.PrintDocumentInfo
-import android.print.PrintManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.example.data.BillItem
 import java.io.File
-import java.io.FileOutputStream
 import java.text.DecimalFormat
 
 enum class PrintPosition(val label: String, val description: String) {
     TOP("উপরে (Top)", "A4 কাগজের উপরের অর্ধেকাংশে"),
     BOTTOM("নিচে (Bottom)", "A4 কাগজের নিচের অর্ধেকাংশে"),
-    BOTH("উভয় অংশ (2 Copies)", "A4 পাতায় ২টি কপি একসাথে (উপরে ও নিচে)")
+    BOTH("উভয় অংশ (2 Copies)", "A4 পাতায় ২টি কপি একসাথে (উপরে ও নিচে)")
 }
 
 object PrintUtils {
@@ -56,14 +50,14 @@ object PrintUtils {
         val webView = WebView(context)
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
-                val printManager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager
+                val printManager = context.getSystemService(Context.PRINT_SERVICE) as? android.print.PrintManager
                 val jobName = "Food_Bill_${dateString.replace("/", "-")}"
                 val printAdapter = webView.createPrintDocumentAdapter(jobName)
-                
+
                 val builder = PrintAttributes.Builder()
                 builder.setMediaSize(PrintAttributes.MediaSize.ISO_A4.asPortrait())
                 builder.setMinMargins(PrintAttributes.Margins(0, 0, 0, 0))
-                
+
                 printManager?.print(jobName, printAdapter, builder.build())
             }
         }
@@ -71,6 +65,12 @@ object PrintUtils {
         webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
     }
 
+    /**
+     * Generates the share PDF using the SAME rendering engine as printFoodBill
+     * (WebView.createPrintDocumentAdapter -> onLayout -> onWrite), instead of the
+     * old manual PdfDocument + view.draw(canvas) approach. This guarantees the
+     * shared PDF is pixel-identical to the Print Preview, with no cropping.
+     */
     fun shareFoodBillPdf(
         context: Context,
         centerName: String = "আল বারাকা মেডিকেল সেন্টার",
@@ -94,43 +94,48 @@ object PrintUtils {
         )
 
         val webView = WebView(context)
-        val pageWidth = 794 // A4 210mm in px at 96dpi
-        val pageHeight = 1123 // A4 297mm in px at 96dpi
-
-        webView.layoutParams = android.view.ViewGroup.LayoutParams(pageWidth, pageHeight)
-        webView.measure(
-            android.view.View.MeasureSpec.makeMeasureSpec(pageWidth, android.view.View.MeasureSpec.EXACTLY),
-            android.view.View.MeasureSpec.makeMeasureSpec(pageHeight, android.view.View.MeasureSpec.EXACTLY)
-        )
-        webView.layout(0, 0, pageWidth, pageHeight)
-
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 try {
-                    val pdfDocument = PdfDocument()
-                    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-                    val page = pdfDocument.startPage(pageInfo)
-                    val canvas = page.canvas
+                    val jobName = "Food_Bill_${dateString.replace("/", "-")}"
+                    val printAdapter = webView.createPrintDocumentAdapter(jobName)
 
-                    val scaleX = 595f / pageWidth.toFloat()
-                    val scaleY = 842f / pageHeight.toFloat()
-                    canvas.scale(scaleX, scaleY)
+                    val attributes = PrintAttributes.Builder()
+                        .setMediaSize(PrintAttributes.MediaSize.ISO_A4.asPortrait())
+                        .setMinMargins(PrintAttributes.Margins(0, 0, 0, 0))
+                        .setResolution(PrintAttributes.Resolution("pdf", "pdf", 300, 300))
+                        .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
+                        .build()
 
-                    view.draw(canvas)
-                    pdfDocument.finishPage(page)
+                    printAdapter.onLayout(
+                        null,
+                        attributes,
+                        CancellationSignal(),
+                        object : PrintDocumentAdapter.LayoutResultCallback() {
+                            override fun onLayoutFinished(info: PrintDocumentInfo?, changed: Boolean) {
+                                writeAdapterToPdfFile(context, printAdapter, dateString)
+                            }
 
-                    val cacheDir = File(context.cacheDir, "food_bills").apply { mkdirs() }
-                    val pdfFile = File(cacheDir, "Food_Bill_${dateString.replace("/", "-")}.pdf")
-                    if (pdfFile.exists()) pdfFile.delete()
+                            override fun onLayoutFailed(error: CharSequence?) {
+                                Toast.makeText(
+                                    context,
+                                    "পিডিএফ লেআউট ব্যর্থ: $error",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
 
-                    FileOutputStream(pdfFile).use { out ->
-                        pdfDocument.writeTo(out)
-                    }
-                    pdfDocument.close()
-
-                    sharePdfFile(context, pdfFile, dateString)
+                            override fun onLayoutCancelled() {
+                                // No-op: user or system cancelled layout.
+                            }
+                        },
+                        null
+                    )
                 } catch (e: Exception) {
-                    Toast.makeText(context, "পিডিএফ ফাইল তৈরি ব্যর্থ: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "পিডিএফ ফাইল তৈরি ব্যর্থ: ${e.localizedMessage}",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
@@ -138,211 +143,63 @@ object PrintUtils {
         webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
     }
 
-    private fun drawSingleVoucherOnCanvas(
-        canvas: android.graphics.Canvas,
-        startY: Float,
-        centerName: String,
-        subtitle: String,
-        dateString: String,
-        items: List<BillItem>,
-        totalAmount: Double,
-        purchaserLabel: String
+    private fun writeAdapterToPdfFile(
+        context: Context,
+        printAdapter: PrintDocumentAdapter,
+        dateString: String
     ) {
-        val maroonColor = Color.parseColor("#5A0000")
+        try {
+            val cacheDir = File(context.cacheDir, "food_bills").apply { mkdirs() }
+            val pdfFile = File(cacheDir, "Food_Bill_${dateString.replace("/", "-")}.pdf")
+            if (pdfFile.exists()) pdfFile.delete()
 
-        canvas.save()
-        canvas.translate(575f, startY + 8f)
-        canvas.rotate(90f)
+            val pfd = ParcelFileDescriptor.open(
+                pdfFile,
+                ParcelFileDescriptor.MODE_CREATE
+                    or ParcelFileDescriptor.MODE_WRITE_ONLY
+                    or ParcelFileDescriptor.MODE_TRUNCATE
+            )
 
-        val localStartY = 0f
+            printAdapter.onWrite(
+                arrayOf(PageRange.ALL_PAGES),
+                pfd,
+                CancellationSignal(),
+                object : PrintDocumentAdapter.WriteResultCallback() {
+                    override fun onWriteFinished(pages: Array<out PageRange>) {
+                        try {
+                            pfd.close()
+                        } catch (_: Exception) {
+                        }
+                        sharePdfFile(context, pdfFile, dateString)
+                    }
 
-        // Header Banner
-        val headerPaint = Paint().apply {
-            color = maroonColor
-            style = Paint.Style.FILL
+                    override fun onWriteFailed(error: CharSequence?) {
+                        try {
+                            pfd.close()
+                        } catch (_: Exception) {
+                        }
+                        Toast.makeText(
+                            context,
+                            "পিডিএফ লেখা ব্যর্থ: $error",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    override fun onWriteCancelled() {
+                        try {
+                            pfd.close()
+                        } catch (_: Exception) {
+                        }
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            Toast.makeText(
+                context,
+                "পিডিএফ ফাইল তৈরি ব্যর্থ: ${e.localizedMessage}",
+                Toast.LENGTH_SHORT
+            ).show()
         }
-        val headerRect = RectF(15f, localStartY, 565f, localStartY + 44f)
-        canvas.drawRect(headerRect, headerPaint)
-
-        // Title
-        val titleTextPaint = Paint().apply {
-            color = Color.WHITE
-            textSize = 19f
-            isFakeBoldText = true
-            textAlign = Paint.Align.CENTER
-        }
-        canvas.drawText(centerName, 290f, localStartY + 25f, titleTextPaint)
-
-        // Subtitle
-        val subtitleTextPaint = Paint().apply {
-            color = Color.WHITE
-            textSize = 11f
-            textAlign = Paint.Align.CENTER
-        }
-        canvas.drawText(subtitle, 290f, localStartY + 39f, subtitleTextPaint)
-
-        // Sawtooth Teeth Bar
-        val toothWidth = 10f
-        val toothHeight = 5f
-        var toothX = 15f
-        val toothPaint = Paint().apply {
-            color = maroonColor
-            style = Paint.Style.FILL
-        }
-        while (toothX < 565f) {
-            val path = android.graphics.Path().apply {
-                moveTo(toothX, localStartY + 44f)
-                lineTo(toothX + toothWidth / 2, localStartY + 44f + toothHeight)
-                lineTo(toothX + toothWidth, localStartY + 44f)
-                close()
-            }
-            canvas.drawPath(path, toothPaint)
-            toothX += toothWidth
-        }
-
-        // Metadata Row (Only Date, No Bill Number)
-        val metaPaintRight = Paint().apply {
-            color = maroonColor
-            textSize = 11f
-            isFakeBoldText = true
-            textAlign = Paint.Align.RIGHT
-        }
-        val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("তারিখ : $bnDate", 565f, localStartY + 62f, metaPaintRight)
-
-        // TABLE GRID CONFIG
-        val tableLeft = 15f
-        val tableRight = 565f
-        val tableTop = localStartY + 70f
-        val colWidths = floatArrayOf(45f, 240f, 90f, 65f, 110f) // Total width = 550f
-
-        // Table Header Background
-        val tableHeaderRect = RectF(tableLeft, tableTop, tableRight, tableTop + 18f)
-        canvas.drawRect(tableHeaderRect, headerPaint)
-
-        // Table Header Text
-        val headerTextPaint = Paint().apply {
-            color = Color.WHITE
-            textSize = 10f
-            isFakeBoldText = true
-            textAlign = Paint.Align.CENTER
-        }
-        val colTitles = arrayOf("ক্রমিক নং", "খাবারের নাম / বিবরণ", "পরিমাণ", "দর", "টাকা")
-        var currentX = tableLeft
-        for (i in 0 until 5) {
-            val colCenterX = currentX + colWidths[i] / 2
-            canvas.drawText(colTitles[i], colCenterX, tableTop + 13f, headerTextPaint)
-            currentX += colWidths[i]
-        }
-
-        // Table Rows (Exactly 14 rows filling half-page height)
-        val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
-        val totalRows = 14
-        val rowHeight = 22.5f
-        val gridBorderPaint = Paint().apply {
-            color = maroonColor
-            style = Paint.Style.STROKE
-            strokeWidth = 1.5f
-        }
-        val rowDashPaint = Paint().apply {
-            color = Color.parseColor("#C8A8A8")
-            strokeWidth = 0.8f
-            pathEffect = android.graphics.DashPathEffect(floatArrayOf(4f, 3f), 0f)
-        }
-
-        val itemTextPaint = Paint().apply {
-            color = Color.parseColor("#2C1810")
-            textSize = 10f
-        }
-        val itemBoldPaint = Paint().apply {
-            color = Color.parseColor("#2C1810")
-            textSize = 10f
-            isFakeBoldText = true
-        }
-
-        var rowY = tableTop + 18f
-        for (r in 0 until totalRows) {
-            val slNo = BengaliUtils.toBengaliDigits(String.format("%02d", r + 1))
-            
-            // Draw Sl No
-            itemBoldPaint.textAlign = Paint.Align.CENTER
-            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 15.5f, itemBoldPaint)
-
-            if (r < validItems.size) {
-                val item = validItems[r]
-                // Name
-                itemBoldPaint.textAlign = Paint.Align.LEFT
-                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 15.5f, itemBoldPaint)
-
-                // Qty
-                itemTextPaint.textAlign = Paint.Align.CENTER
-                val bnQty = BengaliUtils.toBengaliDigits(item.quantity)
-                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 15.5f, itemTextPaint)
-
-                // Rate
-                val bnRate = if (item.rate == "0" || item.rate.isBlank()) "" else BengaliUtils.toBengaliDigits(item.rate)
-                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 15.5f, itemTextPaint)
-
-                // Amount
-                itemBoldPaint.textAlign = Paint.Align.RIGHT
-                val bnAmount = if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(DecimalFormat("#,##0").format(item.amount))}/-"
-                canvas.drawText(bnAmount, tableRight - 6f, rowY + 15.5f, itemBoldPaint)
-            }
-
-            // Row Dashed Bottom Line
-            canvas.drawLine(tableLeft, rowY + rowHeight, tableRight, rowY + rowHeight, rowDashPaint)
-            rowY += rowHeight
-        }
-
-        // Table Total Row
-        val totalRowY = rowY
-        canvas.drawLine(tableLeft, totalRowY, tableRight, totalRowY, gridBorderPaint)
-
-        // Total Label
-        val totalLabelPaint = Paint().apply {
-            color = maroonColor
-            textSize = 10.5f
-            isFakeBoldText = true
-            textAlign = Paint.Align.RIGHT
-        }
-        canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 8f, totalRowY + 13f, totalLabelPaint)
-
-        // Total Value
-        val totalValPaint = Paint().apply {
-            color = maroonColor
-            textSize = 11f
-            isFakeBoldText = true
-            textAlign = Paint.Align.RIGHT
-        }
-        val bnTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
-        canvas.drawText(bnTotal, tableRight - 6f, totalRowY + 13f, totalValPaint)
-
-        val tableBottomY = totalRowY + 16f
-        canvas.drawLine(tableLeft, tableBottomY, tableRight, tableBottomY, gridBorderPaint)
-
-        // Outer Table Rect Border & Vertical Column Grid Lines
-        canvas.drawRect(tableLeft, tableTop, tableRight, tableBottomY, gridBorderPaint)
-        
-        var lineX = tableLeft
-        for (i in 0 until 4) {
-            lineX += colWidths[i]
-            canvas.drawLine(lineX, tableTop, lineX, tableBottomY, gridBorderPaint)
-        }
-
-        // FOOTER BELOW TABLE
-        val footerStartY = tableBottomY + 14f
-        val footerPaint = Paint().apply {
-            color = Color.parseColor("#2C1810")
-            textSize = 9.5f
-        }
-
-        canvas.drawText("কথায় (টাকার পরিমাণ) : .......................................................................................... টাকা মাত্র।", 15f, footerStartY, footerPaint)
-
-        // Signature Row
-        val sigY = footerStartY + 24f
-        canvas.drawText("(ক্রেতার স্বাক্ষর : _______________________", 15f, sigY, footerPaint)
-
-        canvas.restore()
     }
 
     private fun sharePdfFile(context: Context, pdfFile: File, dateString: String) {
@@ -358,11 +215,11 @@ object PrintUtils {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
-            val chooser = Intent.createChooser(shareIntent, "পিডিএফ শেয়ার করুন (WhatsApp / আদার্স)")
+            val chooser = Intent.createChooser(shareIntent, "পিডিএফ শেয়ার করুন (WhatsApp / আদার্স)")
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
         } catch (e: Exception) {
-            Toast.makeText(context, "শেয়ার করতে সমস্যা হয়েছে: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "শেয়ার করতে সমস্যা হয়েছে: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
         }
     }
 
