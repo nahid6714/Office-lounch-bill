@@ -277,24 +277,12 @@ fun HomeScreen(
                             selectedTab = 0
                         },
                         onPrintBill = { bill ->
-                            PrintUtils.printFoodBill(
-                                context = context,
-                                centerName = "আল বারাকা মেডিকেল সেন্টার",
-                                subtitle = "দৈনিক খাবার বিল",
-                                dateString = bill.dateString,
-                                items = bill.items,
-                                totalAmount = bill.totalAmount
-                            )
+                            viewModel.loadBillForEditing(bill)
+                            showPreviewDialog = true
                         },
                         onSharePdfBill = { bill ->
-                            PrintUtils.shareFoodBillPdf(
-                                context = context,
-                                centerName = "আল বারাকা মেডিকেল সেন্টার",
-                                subtitle = "দৈনিক খাবার বিল",
-                                dateString = bill.dateString,
-                                items = bill.items,
-                                totalAmount = bill.totalAmount
-                            )
+                            viewModel.loadBillForEditing(bill)
+                            showPreviewDialog = true
                         },
                         onDeleteBill = { id -> viewModel.deleteBill(id) }
                     )
@@ -318,7 +306,7 @@ fun HomeScreen(
         VoucherPreviewDialog(
             state = currentBillState,
             onDismiss = { showPreviewDialog = false },
-            onPrint = {
+            onPrint = { pos ->
                 val validItems = currentBillState.items.filter { it.name.isNotBlank() || it.amount > 0 }
                 PrintUtils.printFoodBill(
                     context = context,
@@ -326,10 +314,11 @@ fun HomeScreen(
                     subtitle = currentBillState.subtitle,
                     dateString = currentBillState.dateString,
                     items = validItems,
-                    totalAmount = currentBillState.totalAmount
+                    totalAmount = currentBillState.totalAmount,
+                    position = pos
                 )
             },
-            onSharePdf = {
+            onSharePdf = { pos ->
                 val validItems = currentBillState.items.filter { it.name.isNotBlank() || it.amount > 0 }
                 PrintUtils.shareFoodBillPdf(
                     context = context,
@@ -337,7 +326,8 @@ fun HomeScreen(
                     subtitle = currentBillState.subtitle,
                     dateString = currentBillState.dateString,
                     items = validItems,
-                    totalAmount = currentBillState.totalAmount
+                    totalAmount = currentBillState.totalAmount,
+                    position = pos
                 )
             }
         )
