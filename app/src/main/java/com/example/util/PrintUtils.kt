@@ -260,10 +260,10 @@ object PrintUtils {
             currentX += colWidths[i]
         }
 
-        // Table Rows (Exactly 18 rows to fill the full half-page height)
+        // Table Rows (Maximum 14 rows with larger height)
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
-        val totalRows = 18
-        val rowHeight = 14.5f
+        val totalRows = 14
+        val rowHeight = 18.5f
         val gridBorderPaint = Paint().apply {
             color = maroonColor
             style = Paint.Style.STROKE
@@ -277,11 +277,11 @@ object PrintUtils {
 
         val itemTextPaint = Paint().apply {
             color = Color.parseColor("#2C1810")
-            textSize = 9.5f
+            textSize = 10f
         }
         val itemBoldPaint = Paint().apply {
             color = Color.parseColor("#2C1810")
-            textSize = 9.5f
+            textSize = 10f
             isFakeBoldText = true
         }
 
@@ -291,27 +291,27 @@ object PrintUtils {
             
             // Draw Sl No
             itemBoldPaint.textAlign = Paint.Align.CENTER
-            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 11f, itemBoldPaint)
+            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 13.5f, itemBoldPaint)
 
             if (r < validItems.size) {
                 val item = validItems[r]
                 // Name
                 itemBoldPaint.textAlign = Paint.Align.LEFT
-                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 11f, itemBoldPaint)
+                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 13.5f, itemBoldPaint)
 
                 // Qty
                 itemTextPaint.textAlign = Paint.Align.CENTER
                 val bnQty = BengaliUtils.toBengaliDigits(item.quantity)
-                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 11f, itemTextPaint)
+                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 13.5f, itemTextPaint)
 
                 // Rate
                 val bnRate = if (item.rate == "0" || item.rate.isBlank()) "" else BengaliUtils.toBengaliDigits(item.rate)
-                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 11f, itemTextPaint)
+                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 13.5f, itemTextPaint)
 
                 // Amount
                 itemBoldPaint.textAlign = Paint.Align.RIGHT
                 val bnAmount = if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(DecimalFormat("#,##0").format(item.amount))}/-"
-                canvas.drawText(bnAmount, tableRight - 6f, rowY + 11f, itemBoldPaint)
+                canvas.drawText(bnAmount, tableRight - 6f, rowY + 13.5f, itemBoldPaint)
             }
 
             // Row Dashed Bottom Line
@@ -413,7 +413,7 @@ object PrintUtils {
         val bengaliTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
 
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
-        val totalRowsCount = 18
+        val totalRowsCount = 14
 
         val rowsHtml = StringBuilder()
         for (i in 0 until totalRowsCount) {

@@ -289,7 +289,7 @@ private fun SingleMemoVoucherCard(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 // Table Grid
-                val totalRows = 18
+                val totalRows = 14
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -342,7 +342,7 @@ private fun SingleMemoVoucherCard(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 4.dp, horizontal = 2.dp),
+                                .padding(vertical = 5.5.dp, horizontal = 2.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -350,28 +350,28 @@ private fun SingleMemoVoucherCard(
                                 modifier = Modifier.weight(0.9f),
                                 style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
                             )
-                            Box(modifier = Modifier.width(0.8.dp).height(14.dp).background(MaroonHeaderColor))
+                            Box(modifier = Modifier.width(0.8.dp).height(16.dp).background(MaroonHeaderColor))
 
                             Text(
                                 text = item?.name ?: "",
                                 modifier = Modifier.weight(2.6f).padding(start = 4.dp),
                                 style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810))
                             )
-                            Box(modifier = Modifier.width(0.8.dp).height(14.dp).background(MaroonHeaderColor))
+                            Box(modifier = Modifier.width(0.8.dp).height(16.dp).background(MaroonHeaderColor))
 
                             Text(
                                 text = if (item != null) BengaliUtils.toBengaliDigits(item.quantity) else "",
                                 modifier = Modifier.weight(1.2f),
                                 style = TextStyle(fontSize = 10.sp, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
                             )
-                            Box(modifier = Modifier.width(0.8.dp).height(14.dp).background(MaroonHeaderColor))
+                            Box(modifier = Modifier.width(0.8.dp).height(16.dp).background(MaroonHeaderColor))
 
                             Text(
                                 text = if (item != null && item.rate != "0" && item.rate.isNotBlank()) BengaliUtils.toBengaliDigits(item.rate) else "",
                                 modifier = Modifier.weight(0.9f),
                                 style = TextStyle(fontSize = 10.sp, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
                             )
-                            Box(modifier = Modifier.width(0.8.dp).height(14.dp).background(MaroonHeaderColor))
+                            Box(modifier = Modifier.width(0.8.dp).height(16.dp).background(MaroonHeaderColor))
 
                             val bnAmount = if (item != null) {
                                 if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(item.amount.toInt().toString())}/-"
