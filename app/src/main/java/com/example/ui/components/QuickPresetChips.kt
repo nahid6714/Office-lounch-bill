@@ -20,7 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.AlertDialog
@@ -44,6 +43,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.util.BengaliUtils
 import com.example.util.QuickPreset
 
 @Composable
@@ -56,6 +56,7 @@ fun QuickPresetChips(
     modifier: Modifier = Modifier
 ) {
     var showManageDialog by remember { mutableStateOf(false) }
+    var promptPreset by remember { mutableStateOf<QuickPreset?>(null) }
 
     Column(
         modifier = modifier
@@ -119,7 +120,13 @@ fun QuickPresetChips(
             items(presets) { preset ->
                 PresetChip(
                     preset = preset,
-                    onClick = { onPresetClick(preset.name, preset.defaultQty) }
+                    onClick = {
+                        if (preset.defaultQty.isBlank()) {
+                            promptPreset = preset
+                        } else {
+                            onPresetClick(preset.name, preset.defaultQty)
+                        }
+                    }
                 )
             }
 
@@ -168,6 +175,17 @@ fun QuickPresetChips(
             onResetDefaults = onResetDefaults
         )
     }
+
+    if (promptPreset != null) {
+        PromptQuantityDialog(
+            itemName = promptPreset!!.name,
+            onDismiss = { promptPreset = null },
+            onConfirm = { qty ->
+                onPresetClick(promptPreset!!.name, qty)
+                promptPreset = null
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -180,7 +198,10 @@ fun ManageQuickPresetsDialog(
     onResetDefaults: () -> Unit
 ) {
     var newItemName by remember { mutableStateOf("") }
-    var newItemQty by remember { mutableStateOf("") }
+    var newItemQtyVal by remember { mutableStateOf("") }
+    var selectedUnit by remember { mutableStateOf("কেজি") }
+
+    val commonUnits = listOf("কেজি", "লিটার", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি")
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -199,7 +220,7 @@ fun ManageQuickPresetsDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "নতুন আইটেম যোগ করুন:",
+                    text = "নতুন দ্রুত আইটেম যোগ করুন:",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.DarkGray
@@ -207,39 +228,100 @@ fun ManageQuickPresetsDialog(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = newItemName,
-                        onValueChange = { newItemName = it },
-                        label = { Text("আইটেমের নাম (যেমন: পেঁয়াজ)", fontSize = 11.sp) },
-                        modifier = Modifier
-                            .weight(1.5f)
-                            .testTag("custom_preset_name_input"),
-                        singleLine = true
-                    )
+                OutlinedTextField(
+                    value = newItemName,
+                    onValueChange = { newItemName = it },
+                    label = { Text("আইটেমের নাম (যেমন: পেঁয়াজ, সয়াবিন তেল)", fontSize = 12.sp) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("custom_preset_name_input"),
+                    singleLine = true
+                )
 
-                    OutlinedTextField(
-                        value = newItemQty,
-                        onValueChange = { newItemQty = it },
-                        label = { Text("পরিমাণ (যেমন: ১ কেজি)", fontSize = 11.sp) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("custom_preset_qty_input"),
-                        singleLine = true
-                    )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Unit Selector Options
+                Text(
+                    text = "একক সিলেক্ট করুন (কেজি / লিটার / পিস):",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaroonTextColor
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    commonUnits.forEach { unit ->
+                        val isSelected = selectedUnit == unit
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) MaroonHeaderColor else Color(0xFFE8E0D5),
+                            modifier = Modifier.clickable {
+                                selectedUnit = if (isSelected) "" else unit
+                            }
+                        ) {
+                            Text(
+                                text = unit,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) Color.White else MaroonTextColor,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = newItemQtyVal,
+                    onValueChange = { newItemQtyVal = it },
+                    label = { Text("পরিমাণ (যেমন: ১, ২, ১.৫ - ঐচ্ছিক)", fontSize = 12.sp) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("custom_preset_qty_input"),
+                    singleLine = true
+                )
+
+                // Computed final preset preview
+                val bnQty = BengaliUtils.toBengaliDigits(newItemQtyVal.trim())
+                val formattedQty = when {
+                    bnQty.isNotBlank() && selectedUnit.isNotBlank() -> {
+                        if (bnQty.endsWith(selectedUnit)) bnQty else "$bnQty $selectedUnit"
+                    }
+                    bnQty.isNotBlank() -> bnQty
+                    else -> ""
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                if (newItemName.isNotBlank()) {
+                    Surface(
+                        color = Color(0xFFF5ECE4),
+                        shape = RoundedCornerShape(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "প্রিভিউ: $newItemName${if (formattedQty.isNotBlank()) " ($formattedQty)" else " (পরিমাণ পরে দেওয়া হবে)"}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaroonTextColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 Button(
                     onClick = {
                         if (newItemName.isNotBlank()) {
-                            onAddPreset(newItemName, newItemQty)
+                            onAddPreset(newItemName.trim(), formattedQty)
                             newItemName = ""
-                            newItemQty = ""
+                            newItemQtyVal = ""
                         }
                     },
                     modifier = Modifier
@@ -340,6 +422,151 @@ fun ManageQuickPresetsDialog(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun PromptQuantityDialog(
+    itemName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (qty: String) -> Unit
+) {
+    var qtyVal by remember { mutableStateOf("") }
+    var selectedUnit by remember { mutableStateOf("কেজি") }
+
+    val commonUnits = listOf("কেজি", "লিটার", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি")
+    val quickQtyOptions = listOf("১", "২", "৩", "৫", "১০", "২৫০ গ্রাম", "৫০০ গ্রাম")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column {
+                Text(
+                    text = "‘$itemName’ এর পরিমাণ লিখুন",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = MaroonHeaderColor
+                )
+                Text(
+                    text = "কত কেজি/লিটার/পিস যোগ করতে চান?",
+                    fontSize = 12.sp,
+                    color = Color.DarkGray
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Unit Selection Chips
+                Text(
+                    text = "একক নির্বাচন করুন (Unit):",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaroonTextColor
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    commonUnits.forEach { unit ->
+                        val isSelected = selectedUnit == unit
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) MaroonHeaderColor else Color(0xFFE8E0D5),
+                            modifier = Modifier.clickable {
+                                selectedUnit = if (isSelected) "" else unit
+                            }
+                        ) {
+                            Text(
+                                text = unit,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) Color.White else MaroonTextColor,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Quantity Input
+                OutlinedTextField(
+                    value = qtyVal,
+                    onValueChange = { qtyVal = it },
+                    label = { Text("পরিমাণ (যেমন: ১.৫, ২, ৩)", fontSize = 12.sp) },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("prompt_qty_input")
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Quick Quantity Preset Buttons
+                Text(
+                    text = "দ্রুত পরিমাণ নির্বাচন:",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.DarkGray
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    quickQtyOptions.forEach { option ->
+                        val optionText = if (option.contains("গ্রাম")) option else if (selectedUnit.isNotBlank()) "$option $selectedUnit" else option
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFF0E4D8),
+                            modifier = Modifier.clickable {
+                                qtyVal = optionText
+                            }
+                        ) {
+                            Text(
+                                text = optionText,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaroonTextColor,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val bnQty = BengaliUtils.toBengaliDigits(qtyVal.trim())
+                    val finalQty = when {
+                        bnQty.isNotBlank() && selectedUnit.isNotBlank() && !bnQty.contains(selectedUnit) -> "$bnQty $selectedUnit"
+                        bnQty.isNotBlank() -> bnQty
+                        selectedUnit.isNotBlank() -> selectedUnit
+                        else -> ""
+                    }
+                    onConfirm(finalQty)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = MaroonHeaderColor)
+            ) {
+                Text("তালিকায় যোগ করুন", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = { onConfirm("") }
+            ) {
+                Text("পরিমাণ ছাড়া যোগ", color = Color.Gray)
+            }
+        }
+    )
+}
+
 @Composable
 fun PresetChip(
     preset: QuickPreset,
@@ -383,4 +610,3 @@ fun PresetChip(
         }
     }
 }
-
