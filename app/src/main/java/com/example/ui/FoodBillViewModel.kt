@@ -1,0 +1,324 @@
+package com.example.ui
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.data.AppDatabase
+import com.example.data.BillItem
+import com.example.data.BillRepository
+import com.example.data.FoodBillUiModel
+import com.example.util.BengaliUtils
+import com.example.util.QuickPreset
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+class FoodBillViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val repository: BillRepository
+
+    init {
+        val dao = AppDatabase.getDatabase(application).foodBillDao()
+        repository = BillRepository(dao)
+    }
+
+    private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.US)
+
+    private val _currentBillState = MutableStateFlow(CurrentBillState())
+    val currentBillState: StateFlow<CurrentBillState> = _currentBillState.asStateFlow()
+
+    private val _historyBills = MutableStateFlow<List<FoodBillUiModel>>(emptyList())
+    val historyBills: StateFlow<List<FoodBillUiModel>> = _historyBills.asStateFlow()
+
+    private val _quickPresets = MutableStateFlow<List<QuickPreset>>(emptyList())
+    val quickPresets: StateFlow<List<QuickPreset>> = _quickPresets.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _uiEvent = MutableSharedFlow<String>()
+    val uiEvent: SharedFlow<String> = _uiEvent.asSharedFlow()
+
+    private val prefs = application.getSharedPreferences("food_bill_prefs", android.content.Context.MODE_PRIVATE)
+
+    init {
+        // Load Quick Presets from SharedPreferences
+        loadQuickPresets()
+
+        // Default initial items corresponding to the user's template
+        resetToInitialTemplate()
+
+        viewModelScope.launch {
+            repository.allBills.collectLatest { bills ->
+                _historyBills.value = bills
+            }
+        }
+    }
+
+    private fun loadQuickPresets() {
+        val jsonStr = prefs.getString("quick_presets_json", null)
+        if (jsonStr.isNullOrEmpty()) {
+            _quickPresets.value = BengaliUtils.defaultQuickPresets
+            saveQuickPresetsToPrefs(BengaliUtils.defaultQuickPresets)
+        } else {
+            try {
+                val array = org.json.JSONArray(jsonStr)
+                val list = mutableListOf<QuickPreset>()
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    val name = obj.optString("name", "")
+                    val qty = obj.optString("defaultQty", "")
+                    if (name.isNotBlank()) {
+                        list.add(QuickPreset(name, qty))
+                    }
+                }
+                _quickPresets.value = if (list.isNotEmpty()) list else BengaliUtils.defaultQuickPresets
+            } catch (e: Exception) {
+                _quickPresets.value = BengaliUtils.defaultQuickPresets
+            }
+        }
+    }
+
+    private fun saveQuickPresetsToPrefs(presets: List<QuickPreset>) {
+        try {
+            val array = org.json.JSONArray()
+            presets.forEach { p ->
+                val obj = org.json.JSONObject()
+                obj.put("name", p.name)
+                obj.put("defaultQty", p.defaultQty)
+                array.put(obj)
+            }
+            prefs.edit().putString("quick_presets_json", array.toString()).apply()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun addCustomQuickPreset(name: String, qty: String) {
+        val trimmedName = name.trim()
+        if (trimmedName.isBlank()) return
+
+        val currentList = _quickPresets.value.toMutableList()
+        // Replace if already exists or add to beginning
+        val existingIndex = currentList.indexOfFirst { it.name.equals(trimmedName, ignoreCase = true) }
+        if (existingIndex != -1) {
+            currentList[existingIndex] = QuickPreset(trimmedName, qty.trim())
+        } else {
+            currentList.add(0, QuickPreset(trimmedName, qty.trim()))
+        }
+
+        _quickPresets.value = currentList
+        saveQuickPresetsToPrefs(currentList)
+        viewModelScope.launch { _uiEvent.emit("'$trimmedName' দ্রুত তালিকায় যোগ করা হয়েছে") }
+    }
+
+    fun removeQuickPreset(preset: QuickPreset) {
+        val currentList = _quickPresets.value.filterNot { it.name == preset.name }
+        _quickPresets.value = currentList
+        saveQuickPresetsToPrefs(currentList)
+        viewModelScope.launch { _uiEvent.emit("'${preset.name}' দ্রুত তালিকা থেকে সরানো হয়েছে") }
+    }
+
+    fun resetQuickPresetsToDefault() {
+        _quickPresets.value = BengaliUtils.defaultQuickPresets
+        saveQuickPresetsToPrefs(BengaliUtils.defaultQuickPresets)
+        viewModelScope.launch { _uiEvent.emit("ডিফল্ট দ্রুত তালিকা পুনরায় সেট করা হয়েছে") }
+    }
+
+    fun resetToInitialTemplate() {
+        val todayStr = dateFormat.format(Date())
+        _currentBillState.value = CurrentBillState(
+            editingBillId = 0L,
+            dateString = todayStr,
+            centerName = "আল বারাকা মেডিকেল সেন্টার",
+            subtitle = "দৈনিক খাবার বিল",
+            purchaserName = "",
+            items = listOf(
+                BillItem(name = "চাল", quantity = "২ কেজি", rate = "0", amount = 0.0),
+                BillItem(name = "ডাল", quantity = "২ কেজি", rate = "0", amount = 0.0),
+                BillItem(name = "লবণ", quantity = "১ প্যাকেট", rate = "0", amount = 0.0),
+                BillItem(name = "মুরগি", quantity = "২ কেজি", rate = "0", amount = 0.0),
+                BillItem(name = "", quantity = "", rate = "0", amount = 0.0),
+                BillItem(name = "", quantity = "", rate = "0", amount = 0.0)
+            )
+        )
+    }
+
+    fun updateDate(newDate: String) {
+        _currentBillState.update { it.copy(dateString = newDate) }
+    }
+
+    fun updateCenterName(newName: String) {
+        _currentBillState.update { it.copy(centerName = newName) }
+    }
+
+    fun updateSubtitle(newSubtitle: String) {
+        _currentBillState.update { it.copy(subtitle = newSubtitle) }
+    }
+
+    fun updatePurchaserName(name: String) {
+        _currentBillState.update { it.copy(purchaserName = name) }
+    }
+
+    fun addItemRow() {
+        _currentBillState.update { state ->
+            val updatedItems = state.items.toMutableList()
+            updatedItems.add(BillItem(name = "", quantity = "", rate = "0", amount = 0.0))
+            state.copy(items = updatedItems)
+        }
+    }
+
+    fun addQuickPresetItem(name: String, qty: String) {
+        _currentBillState.update { state ->
+            val updatedItems = state.items.toMutableList()
+            // Check if there's an empty row at the bottom to fill
+            val emptyIndex = updatedItems.indexOfFirst { it.name.isBlank() && it.quantity.isBlank() }
+            if (emptyIndex != -1) {
+                updatedItems[emptyIndex] = updatedItems[emptyIndex].copy(name = name, quantity = qty)
+            } else {
+                updatedItems.add(BillItem(name = name, quantity = qty, rate = "0", amount = 0.0))
+            }
+            state.copy(items = updatedItems)
+        }
+    }
+
+    fun updateItemName(id: String, name: String) {
+        _currentBillState.update { state ->
+            val updated = state.items.map { item ->
+                if (item.id == id) item.copy(name = name) else item
+            }
+            state.copy(items = updated)
+        }
+    }
+
+    fun updateItemQuantity(id: String, qty: String) {
+        _currentBillState.update { state ->
+            val updated = state.items.map { item ->
+                if (item.id == id) item.copy(quantity = qty) else item
+            }
+            state.copy(items = updated)
+        }
+    }
+
+    fun updateItemRate(id: String, rate: String) {
+        _currentBillState.update { state ->
+            val updated = state.items.map { item ->
+                if (item.id == id) {
+                    val rateVal = BengaliUtils.parseBengaliNumber(rate)
+                    val qtyVal = extractNumber(item.quantity)
+                    val calcAmount = if (qtyVal > 0) rateVal * qtyVal else rateVal
+                    item.copy(rate = rate, amount = calcAmount)
+                } else item
+            }
+            state.copy(items = updated)
+        }
+    }
+
+    fun updateItemAmount(id: String, amountStr: String) {
+        _currentBillState.update { state ->
+            val amountVal = BengaliUtils.parseBengaliNumber(amountStr)
+            val updated = state.items.map { item ->
+                if (item.id == id) item.copy(amount = amountVal) else item
+            }
+            state.copy(items = updated)
+        }
+    }
+
+    fun removeItemRow(id: String) {
+        _currentBillState.update { state ->
+            if (state.items.size <= 1) {
+                // If only 1 row left, reset it instead of deleting
+                state.copy(items = listOf(BillItem(name = "", quantity = "", rate = "0", amount = 0.0)))
+            } else {
+                state.copy(items = state.items.filterNot { it.id == id })
+            }
+        }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun saveCurrentBill() {
+        val currentState = _currentBillState.value
+        val validItems = currentState.items.filter { it.name.isNotBlank() || it.amount > 0 }
+        
+        if (validItems.isEmpty()) {
+            viewModelScope.launch { _uiEvent.emit("কমপক্ষে একটি আইটেমের বিবরণ বা টাকা লিখুন") }
+            return
+        }
+
+        viewModelScope.launch {
+            val total = validItems.sumOf { it.amount }
+            val dateObj = try { dateFormat.parse(currentState.dateString) } catch (e: Exception) { null }
+            val timestamp = dateObj?.time ?: System.currentTimeMillis()
+
+            val id = repository.saveBill(
+                id = currentState.editingBillId,
+                dateString = currentState.dateString,
+                timestamp = timestamp,
+                purchaserName = currentState.purchaserName,
+                note = "",
+                items = validItems,
+                totalAmount = total
+            )
+
+            _currentBillState.update { it.copy(editingBillId = id) }
+            _uiEvent.emit("বিল সফলভাবে সংরক্ষণ করা হয়েছে!")
+        }
+    }
+
+    fun loadBillForEditing(bill: FoodBillUiModel) {
+        _currentBillState.value = CurrentBillState(
+            editingBillId = bill.id,
+            dateString = bill.dateString,
+            centerName = "আল বারাকা মেডিকেল সেন্টার",
+            subtitle = "দৈনিক খাবার বিল",
+            purchaserName = bill.purchaserName,
+            items = bill.items.ifEmpty { listOf(BillItem(name = "", quantity = "", rate = "0", amount = 0.0)) }
+        )
+        viewModelScope.launch {
+            _uiEvent.emit("${bill.dateString} তারিখের বিল লোড করা হয়েছে")
+        }
+    }
+
+    fun deleteBill(id: Long) {
+        viewModelScope.launch {
+            repository.deleteBill(id)
+            if (_currentBillState.value.editingBillId == id) {
+                resetToInitialTemplate()
+            }
+            _uiEvent.emit("বিলটি মুছে ফেলা হয়েছে")
+        }
+    }
+
+    private fun extractNumber(str: String): Double {
+        val englishStr = BengaliUtils.toEnglishDigits(str)
+        val regex = Regex("""\d+(\.\d+)?""")
+        val match = regex.find(englishStr)
+        return match?.value?.toDoubleOrNull() ?: 0.0
+    }
+}
+
+data class CurrentBillState(
+    val editingBillId: Long = 0L,
+    val dateString: String = "",
+    val centerName: String = "আল বারাকা মেডিকেল সেন্টার",
+    val subtitle: String = "দৈনিক খাবার বিল",
+    val purchaserName: String = "",
+    val purchaserLabel: String = "ক্রয়কারীর স্বাক্ষর",
+    val approverLabel: String = "অনুমোদনকারীর স্বাক্ষর",
+    val items: List<BillItem> = emptyList()
+) {
+    val totalAmount: Double
+        get() = items.sumOf { it.amount }
+}
