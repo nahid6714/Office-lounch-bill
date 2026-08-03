@@ -186,35 +186,35 @@ object PrintUtils {
             color = maroonColor
             style = Paint.Style.FILL
         }
-        val headerRect = RectF(20f, localStartY, 375f, localStartY + 48f)
+        val headerRect = RectF(20f, localStartY, 575f, localStartY + 48f)
         canvas.drawRect(headerRect, headerPaint)
 
         // Title
         val titleTextPaint = Paint().apply {
             color = Color.WHITE
-            textSize = 17f
+            textSize = 18f
             isFakeBoldText = true
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(centerName, 197.5f, localStartY + 26f, titleTextPaint)
+        canvas.drawText(centerName, 297.5f, localStartY + 27f, titleTextPaint)
 
         // Subtitle
         val subtitleTextPaint = Paint().apply {
             color = Color.WHITE
-            textSize = 10.5f
+            textSize = 11f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(subtitle, 197.5f, localStartY + 42f, subtitleTextPaint)
+        canvas.drawText(subtitle, 297.5f, localStartY + 43f, subtitleTextPaint)
 
         // Sawtooth Teeth Bar
-        val toothWidth = 8f
-        val toothHeight = 4f
+        val toothWidth = 10f
+        val toothHeight = 5f
         var toothX = 20f
         val toothPaint = Paint().apply {
             color = maroonColor
             style = Paint.Style.FILL
         }
-        while (toothX < 375f) {
+        while (toothX < 575f) {
             val path = android.graphics.Path().apply {
                 moveTo(toothX, localStartY + 48f)
                 lineTo(toothX + toothWidth / 2, localStartY + 48f + toothHeight)
@@ -228,25 +228,25 @@ object PrintUtils {
         // Metadata Row
         val metaPaintLeft = Paint().apply {
             color = maroonColor
-            textSize = 10.5f
+            textSize = 11f
             isFakeBoldText = true
             textAlign = Paint.Align.LEFT
         }
         val metaPaintRight = Paint().apply {
             color = maroonColor
-            textSize = 10.5f
+            textSize = 11f
             isFakeBoldText = true
             textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("বিল নম্বর : ........................", 25f, localStartY + 68f, metaPaintLeft)
-        canvas.drawText("তারিখ : $bnDate", 370f, localStartY + 68f, metaPaintRight)
+        canvas.drawText("বিল নম্বর : ........................", 35f, localStartY + 68f, metaPaintLeft)
+        canvas.drawText("তারিখ : $bnDate", 560f, localStartY + 68f, metaPaintRight)
 
         // TABLE GRID CONFIG
-        val tableLeft = 25f
-        val tableRight = 370f
+        val tableLeft = 35f
+        val tableRight = 560f
         val tableTop = localStartY + 78f
-        val colWidths = floatArrayOf(35f, 150f, 50f, 45f, 65f) // Total width = 345f
+        val colWidths = floatArrayOf(45f, 230f, 85f, 65f, 100f) // Total width = 525f
 
         // Table Header Background
         val tableHeaderRect = RectF(tableLeft, tableTop, tableRight, tableTop + 18f)
@@ -255,7 +255,7 @@ object PrintUtils {
         // Table Header Text
         val headerTextPaint = Paint().apply {
             color = Color.WHITE
-            textSize = 9.5f
+            textSize = 10f
             isFakeBoldText = true
             textAlign = Paint.Align.CENTER
         }
@@ -284,11 +284,11 @@ object PrintUtils {
 
         val itemTextPaint = Paint().apply {
             color = Color.parseColor("#2C1810")
-            textSize = 9f
+            textSize = 9.5f
         }
         val itemBoldPaint = Paint().apply {
             color = Color.parseColor("#2C1810")
-            textSize = 9f
+            textSize = 9.5f
             isFakeBoldText = true
         }
 
@@ -304,7 +304,7 @@ object PrintUtils {
                 val item = validItems[r]
                 // Name
                 itemBoldPaint.textAlign = Paint.Align.LEFT
-                canvas.drawText(item.name, tableLeft + colWidths[0] + 4f, rowY + 11f, itemBoldPaint)
+                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 11f, itemBoldPaint)
 
                 // Qty
                 itemTextPaint.textAlign = Paint.Align.CENTER
@@ -318,7 +318,7 @@ object PrintUtils {
                 // Amount
                 itemBoldPaint.textAlign = Paint.Align.RIGHT
                 val bnAmount = if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(DecimalFormat("#,##0").format(item.amount))}/-"
-                canvas.drawText(bnAmount, tableRight - 4f, rowY + 11f, itemBoldPaint)
+                canvas.drawText(bnAmount, tableRight - 6f, rowY + 11f, itemBoldPaint)
             }
 
             // Row Dashed Bottom Line
@@ -333,21 +333,21 @@ object PrintUtils {
         // Total Label
         val totalLabelPaint = Paint().apply {
             color = maroonColor
-            textSize = 10f
-            isFakeBoldText = true
-            textAlign = Paint.Align.RIGHT
-        }
-        canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 6f, totalRowY + 13f, totalLabelPaint)
-
-        // Total Value
-        val totalValPaint = Paint().apply {
-            color = maroonColor
             textSize = 10.5f
             isFakeBoldText = true
             textAlign = Paint.Align.RIGHT
         }
+        canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 8f, totalRowY + 13f, totalLabelPaint)
+
+        // Total Value
+        val totalValPaint = Paint().apply {
+            color = maroonColor
+            textSize = 11f
+            isFakeBoldText = true
+            textAlign = Paint.Align.RIGHT
+        }
         val bnTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
-        canvas.drawText(bnTotal, tableRight - 4f, totalRowY + 13f, totalValPaint)
+        canvas.drawText(bnTotal, tableRight - 6f, totalRowY + 13f, totalValPaint)
 
         val tableBottomY = totalRowY + 16f
         canvas.drawLine(tableLeft, tableBottomY, tableRight, tableBottomY, gridBorderPaint)
@@ -365,22 +365,22 @@ object PrintUtils {
         val footerStartY = tableBottomY + 16f
         val footerPaint = Paint().apply {
             color = Color.parseColor("#2C1810")
-            textSize = 9f
+            textSize = 9.5f
         }
 
-        canvas.drawText("কথায় (টাকার পরিমাণ) : ................................................................................ টাকা মাত্র।", 25f, footerStartY, footerPaint)
+        canvas.drawText("কথায় (টাকার পরিমাণ) : .......................................................................................... টাকা মাত্র।", 35f, footerStartY, footerPaint)
 
         // Signature Row
         val sigY = footerStartY + 26f
-        canvas.drawText("(ক্রেতার স্বাক্ষর : _______________________", 25f, sigY, footerPaint)
+        canvas.drawText("(ক্রেতার স্বাক্ষর : _______________________", 35f, sigY, footerPaint)
 
         // Bottom Diamond Decor
         val diamondPaint = Paint().apply {
             color = maroonColor
-            textSize = 9f
+            textSize = 9.5f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("────────────────── ◆ ──────────────────", 197.5f, sigY + 16f, diamondPaint)
+        canvas.drawText("────────────────── ◆ ──────────────────", 297.5f, sigY + 16f, diamondPaint)
 
         canvas.restore()
     }
