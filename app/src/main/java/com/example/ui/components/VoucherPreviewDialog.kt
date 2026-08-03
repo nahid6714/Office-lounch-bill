@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import android.webkit.WebView
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +36,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
@@ -116,11 +119,10 @@ fun VoucherPreviewDialog(
                         .verticalScroll(rememberScrollState()),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    // A5 Landscape Ratio Paper Container
+                    // A4 Portrait Aspect Ratio Paper Container
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(1.418f) // Standard A5 Landscape / A4 Half-Page Aspect Ratio
                             .testTag("preview_memo_paper"),
                         shape = RoundedCornerShape(6.dp),
                         colors = CardDefaults.cardColors(containerColor = CreamPaperBg),
@@ -129,21 +131,21 @@ fun VoucherPreviewDialog(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp)
+                                .border(1.5.dp, MaroonHeaderColor, RoundedCornerShape(6.dp))
                         ) {
                             // Header Banner
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(MaroonHeaderColor, shape = RoundedCornerShape(4.dp))
-                                    .padding(vertical = 10.dp, horizontal = 8.dp),
+                                    .background(MaroonHeaderColor)
+                                    .padding(vertical = 12.dp, horizontal = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = state.centerName,
                                         style = TextStyle(
-                                            fontSize = 18.sp,
+                                            fontSize = 20.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.White
                                         ),
@@ -155,147 +157,218 @@ fun VoucherPreviewDialog(
                                         style = TextStyle(
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Normal,
-                                            color = Color.White.copy(alpha = 0.9f)
+                                            color = Color.White.copy(alpha = 0.95f)
                                         ),
                                         textAlign = TextAlign.Center
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(6.dp))
+                            SawtoothDivider()
 
-                            // Date Row (Top Right)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "তারিখ: ${BengaliUtils.toBengaliDigits(state.dateString)}",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaroonTextColor
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Divider(color = WarmBorderColor, thickness = 1.dp)
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // Clean Bullet List Items with Leaders (matching paper memo)
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
+                                    .padding(12.dp)
                             ) {
-                                validItems.forEach { item ->
-                                    val bnQty = if (item.quantity.isNotBlank()) " (${BengaliUtils.toBengaliDigits(item.quantity)})" else ""
-                                    val bnAmount = if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(item.amount.toInt().toString())}/-"
+                                // Metadata Row
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "বিল নম্বর : ........................",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaroonHeaderColor
+                                    )
+                                    Text(
+                                        text = "তারিখ: ${BengaliUtils.toBengaliDigits(state.dateString)}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaroonHeaderColor
+                                    )
+                                }
 
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Canvas(modifier = Modifier.fillMaxWidth().height(1.dp)) {
+                                    drawLine(
+                                        color = MaroonHeaderColor,
+                                        start = Offset(0f, 0f),
+                                        end = Offset(size.width, 0f),
+                                        strokeWidth = 1.dp.toPx(),
+                                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Table Grid
+                                val totalRows = maxOf(12, validItems.size)
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .border(1.dp, MaroonHeaderColor, RoundedCornerShape(4.dp))
+                                ) {
+                                    // Table Header Row
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 4.dp),
+                                            .background(MaroonHeaderColor)
+                                            .padding(vertical = 6.dp, horizontal = 2.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "* ",
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaroonHeaderColor
+                                            text = "ক্রমিক নং",
+                                            modifier = Modifier.weight(0.9f),
+                                            style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
                                         )
+                                        Box(modifier = Modifier.width(1.dp).height(14.dp).background(Color.White))
                                         Text(
-                                            text = item.name,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF2C1810)
+                                            text = "খাবারের নাম / বিবরণ",
+                                            modifier = Modifier.weight(2.6f).padding(start = 4.dp),
+                                            style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Start)
                                         )
-                                        if (bnQty.isNotEmpty()) {
+                                        Box(modifier = Modifier.width(1.dp).height(14.dp).background(Color.White))
+                                        Text(
+                                            text = "পরিমাণ",
+                                            modifier = Modifier.weight(1.2f),
+                                            style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+                                        )
+                                        Box(modifier = Modifier.width(1.dp).height(14.dp).background(Color.White))
+                                        Text(
+                                            text = "দর",
+                                            modifier = Modifier.weight(0.9f),
+                                            style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+                                        )
+                                        Box(modifier = Modifier.width(1.dp).height(14.dp).background(Color.White))
+                                        Text(
+                                            text = "টাকা",
+                                            modifier = Modifier.weight(1.2f).padding(end = 4.dp),
+                                            style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.End)
+                                        )
+                                    }
+
+                                    // Table Body Rows
+                                    for (r in 0 until totalRows) {
+                                        val slNo = BengaliUtils.toBengaliDigits(String.format("%02d", r + 1))
+                                        val item = if (r < validItems.size) validItems[r] else null
+
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 5.dp, horizontal = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            // Sl No
                                             Text(
-                                                text = bnQty,
-                                                fontSize = 13.sp,
-                                                color = Color(0xFF5C1F1F)
+                                                text = slNo,
+                                                modifier = Modifier.weight(0.9f),
+                                                style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
+                                            )
+                                            Box(modifier = Modifier.width(0.8.dp).height(16.dp).background(MaroonHeaderColor))
+
+                                            // Name
+                                            Text(
+                                                text = item?.name ?: "",
+                                                modifier = Modifier.weight(2.6f).padding(start = 4.dp),
+                                                style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810))
+                                            )
+                                            Box(modifier = Modifier.width(0.8.dp).height(16.dp).background(MaroonHeaderColor))
+
+                                            // Qty
+                                            Text(
+                                                text = if (item != null) BengaliUtils.toBengaliDigits(item.quantity) else "",
+                                                modifier = Modifier.weight(1.2f),
+                                                style = TextStyle(fontSize = 11.sp, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
+                                            )
+                                            Box(modifier = Modifier.width(0.8.dp).height(16.dp).background(MaroonHeaderColor))
+
+                                            // Rate
+                                            Text(
+                                                text = if (item != null && item.rate != "0" && item.rate.isNotBlank()) BengaliUtils.toBengaliDigits(item.rate) else "",
+                                                modifier = Modifier.weight(0.9f),
+                                                style = TextStyle(fontSize = 11.sp, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
+                                            )
+                                            Box(modifier = Modifier.width(0.8.dp).height(16.dp).background(MaroonHeaderColor))
+
+                                            // Amount
+                                            val bnAmount = if (item != null) {
+                                                if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(item.amount.toInt().toString())}/-"
+                                            } else ""
+                                            Text(
+                                                text = bnAmount,
+                                                modifier = Modifier.weight(1.2f).padding(end = 4.dp),
+                                                style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810), textAlign = TextAlign.End)
                                             )
                                         }
-                                        Spacer(modifier = Modifier.width(6.dp))
 
-                                        // Dashed Leader Line
-                                        Box(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(1.dp)
-                                                .background(Color(0xFFC8B8A8))
-                                        )
+                                        // Dashed Bottom Row Line
+                                        Canvas(modifier = Modifier.fillMaxWidth().height(0.8.dp)) {
+                                            drawLine(
+                                                color = Color(0xFFC8B8B8),
+                                                start = Offset(0f, 0f),
+                                                end = Offset(size.width, 0f),
+                                                strokeWidth = 0.8.dp.toPx(),
+                                                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4f, 3f), 0f)
+                                            )
+                                        }
+                                    }
 
-                                        Spacer(modifier = Modifier.width(6.dp))
+                                    // Table Total Row
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(Color(0xFFFBF4EE))
+                                            .padding(vertical = 6.dp, horizontal = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         Text(
-                                            text = bnAmount,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF2C1810)
+                                            text = "মোট —",
+                                            modifier = Modifier.weight(5.6f).padding(end = 8.dp),
+                                            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaroonHeaderColor, textAlign = TextAlign.End)
+                                        )
+                                        Box(modifier = Modifier.width(1.dp).height(18.dp).background(MaroonHeaderColor))
+                                        Text(
+                                            text = "${BengaliUtils.formatBengaliCurrency(state.totalAmount)}/-",
+                                            modifier = Modifier.weight(1.2f).padding(end = 4.dp),
+                                            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaroonHeaderColor, textAlign = TextAlign.End)
                                         )
                                     }
                                 }
-                            }
 
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Divider(color = MaroonHeaderColor, thickness = 1.5.dp)
-                            Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(14.dp))
 
-                            // Total Amount (Right aligned with Arrow)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                                // Footer Section
                                 Text(
-                                    text = "মোট ➔ ",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaroonTextColor
+                                    text = "কথায় (টাকার পরিমাণ) : ................................................................................ টাকা মাত্র।",
+                                    fontSize = 10.sp,
+                                    color = Color(0xFF2C1810)
                                 )
-                                Text(
-                                    text = "${BengaliUtils.formatBengaliCurrency(state.totalAmount)}/-",
-                                    fontSize = 19.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = MaroonHeaderColor
-                                )
-                            }
 
-                            Spacer(modifier = Modifier.height(20.dp))
+                                Spacer(modifier = Modifier.height(20.dp))
 
-                            // Signatures Row
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.width(110.dp)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Start
                                 ) {
-                                    Divider(color = MaroonTextColor, thickness = 0.8.dp)
-                                    Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = state.purchaserLabel,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color.DarkGray
+                                        text = "ক্রেতার স্বাক্ষর : _______________________",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2C1810)
                                     )
                                 }
 
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.width(110.dp)
-                                ) {
-                                    Divider(color = MaroonTextColor, thickness = 0.8.dp)
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = state.approverLabel,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color.DarkGray
-                                    )
-                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(
+                                    text = "────────────────── ◆ ──────────────────",
+                                    fontSize = 10.sp,
+                                    color = MaroonHeaderColor,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
                     }
