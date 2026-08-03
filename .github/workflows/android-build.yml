@@ -24,6 +24,9 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
 
+    - name: Ensure .env file exists
+      run: touch .env
+
     - name: Build Debug APK
       run: gradle assembleDebug --stacktrace
 
