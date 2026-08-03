@@ -241,11 +241,9 @@ object PrintUtils {
             color = maroonColor
             textSize = 11f
             isFakeBoldText = true
+            textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("বিল নম্বর : ........................", 35f, startY + 72f, metaPaint)
-        
-        metaPaint.textAlign = Paint.Align.RIGHT
         canvas.drawText("তারিখ : $bnDate", 560f, startY + 72f, metaPaint)
 
         // Dashed Separator Line
@@ -281,10 +279,10 @@ object PrintUtils {
             currentX += colWidths[i]
         }
 
-        // Table Rows (12 rows for half page layout)
+        // Table Rows (15 rows matching reference picture)
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
-        val totalRows = maxOf(12, validItems.size)
-        val rowHeight = 16.5f
+        val totalRows = maxOf(15, validItems.size)
+        val rowHeight = 15f
         val gridBorderPaint = Paint().apply {
             color = maroonColor
             style = Paint.Style.STROKE
@@ -386,7 +384,7 @@ object PrintUtils {
 
         // Signature Row
         val sigY = footerStartY + 30f
-        canvas.drawText("ক্রেতার স্বাক্ষর : _______________________", 35f, sigY, footerPaint)
+        canvas.drawText("(ক্রেতার স্বাক্ষর : _______________________", 35f, sigY, footerPaint)
 
         // Bottom Diamond Decor
         val diamondPaint = Paint().apply {
@@ -432,7 +430,7 @@ object PrintUtils {
         val bengaliTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
 
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
-        val totalRowsCount = maxOf(12, validItems.size)
+        val totalRowsCount = maxOf(15, validItems.size)
 
         val rowsHtml = StringBuilder()
         for (i in 0 until totalRowsCount) {
@@ -474,7 +472,7 @@ object PrintUtils {
                 <div class="sawtooth-bar"></div>
 
                 <div class="meta-row">
-                    <div>বিল নম্বর : ........................</div>
+                    <div></div>
                     <div>তারিখ : $bengaliDate</div>
                 </div>
                 <div class="dashed-divider"></div>
@@ -506,7 +504,7 @@ object PrintUtils {
                     </div>
                     <div class="signatures-row">
                         <div class="sig-box">
-                            ক্রেতার স্বাক্ষর : <span class="sig-line"></span>
+                            (ক্রেতার স্বাক্ষর : <span class="sig-line"></span>
                         </div>
                     </div>
                     <div class="bottom-diamond">

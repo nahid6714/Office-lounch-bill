@@ -286,15 +286,9 @@ private fun SingleMemoVoucherCard(
                 // Metadata Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "বিল নম্বর : ........................",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaroonHeaderColor
-                    )
                     Text(
                         text = "তারিখ: ${BengaliUtils.toBengaliDigits(state.dateString)}",
                         fontSize = 11.sp,
@@ -316,7 +310,7 @@ private fun SingleMemoVoucherCard(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 // Table Grid
-                val totalRows = maxOf(10, validItems.size)
+                val totalRows = maxOf(15, validItems.size)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -458,7 +452,7 @@ private fun SingleMemoVoucherCard(
                     horizontalArrangement = Arrangement.Start
                 ) {
                     Text(
-                        text = "ক্রেতার স্বাক্ষর : _______________________",
+                        text = "(ক্রেতার স্বাক্ষর : _______________________",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2C1810)
