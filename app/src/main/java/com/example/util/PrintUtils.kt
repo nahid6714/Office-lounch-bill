@@ -7,7 +7,10 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import android.print.PageRange
 import android.print.PrintAttributes
+import android.print.PrintDocumentAdapter
+import android.print.PrintDocumentInfo
 import android.print.PrintManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -57,7 +60,7 @@ object PrintUtils {
                 
                 val builder = PrintAttributes.Builder()
                 builder.setMediaSize(PrintAttributes.MediaSize.ISO_A4.asPortrait())
-                builder.setMinMargins(PrintAttributes.Margins(0, 0, 0, 0))
+                builder.setMinMargins(PrintAttributes.Margins.NO_MARGINS)
                 
                 printManager?.print(jobName, printAdapter, builder.build())
             }
@@ -73,75 +76,32 @@ object PrintUtils {
         dateString: String,
         items: List<BillItem>,
         totalAmount: Double,
-        purchaserLabel: String = "ক্রেতার স্বাক্ষর",
+        purchaserLabel: String = "ক্রয়কারীর স্বাক্ষর",
         approverLabel: String = "অনুমোদনকারীর স্বাক্ষর",
         position: PrintPosition = PrintPosition.TOP
     ) {
         try {
             val pdfDocument = PdfDocument()
-            // A4 Portrait dimensions in points: 595 x 842 points
             val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
             val page = pdfDocument.startPage(pageInfo)
             val canvas = page.canvas
 
-            // Paper Background (Off-white)
             val bgPaint = Paint().apply {
                 color = Color.parseColor("#FFFDF9")
                 style = Paint.Style.FILL
             }
             canvas.drawRect(0f, 0f, 595f, 842f, bgPaint)
 
-            // Draw based on selected position
             when (position) {
                 PrintPosition.TOP -> {
-                    drawSingleVoucherOnCanvas(
-                        canvas = canvas,
-                        startY = 15f,
-                        centerName = centerName,
-                        subtitle = subtitle,
-                        dateString = dateString,
-                        items = items,
-                        totalAmount = totalAmount,
-                        purchaserLabel = purchaserLabel
-                    )
+                    drawSingleVoucherOnCanvas(canvas, 15f, centerName, subtitle, dateString, items, totalAmount, purchaserLabel)
                 }
                 PrintPosition.BOTTOM -> {
-                    drawSingleVoucherOnCanvas(
-                        canvas = canvas,
-                        startY = 430f,
-                        centerName = centerName,
-                        subtitle = subtitle,
-                        dateString = dateString,
-                        items = items,
-                        totalAmount = totalAmount,
-                        purchaserLabel = purchaserLabel
-                    )
+                    drawSingleVoucherOnCanvas(canvas, 430f, centerName, subtitle, dateString, items, totalAmount, purchaserLabel)
                 }
                 PrintPosition.BOTH -> {
-                    // Top Voucher
-                    drawSingleVoucherOnCanvas(
-                        canvas = canvas,
-                        startY = 15f,
-                        centerName = centerName,
-                        subtitle = subtitle,
-                        dateString = dateString,
-                        items = items,
-                        totalAmount = totalAmount,
-                        purchaserLabel = purchaserLabel
-                    )
-
-                    // Middle Space (No cut line)
-                    // Bottom Voucher
-                    drawSingleVoucherOnCanvas(
-                        canvas = canvas,
-                        startY = 430f,
-                        centerName = centerName,
-                        subtitle = subtitle,
-                        dateString = dateString,
-                        items = items,
-                        totalAmount = totalAmount,
-                        purchaserLabel = purchaserLabel
-                    )
+                    drawSingleVoucherOnCanvas(canvas, 15f, centerName, subtitle, dateString, items, totalAmount, purchaserLabel)
+                    drawSingleVoucherOnCanvas(canvas, 430f, centerName, subtitle, dateString, items, totalAmount, purchaserLabel)
                 }
             }
 
@@ -151,13 +111,10 @@ object PrintUtils {
             val pdfFile = File(cacheDir, "Food_Bill_${dateString.replace("/", "-")}.pdf")
             if (pdfFile.exists()) pdfFile.delete()
 
-            FileOutputStream(pdfFile).use { out ->
-                pdfDocument.writeTo(out)
-            }
+            FileOutputStream(pdfFile).use { out -> pdfDocument.writeTo(out) }
             pdfDocument.close()
 
             sharePdfFile(context, pdfFile, dateString)
-
         } catch (e: Exception) {
             Toast.makeText(context, "পিডিএফ ফাইল তৈরি ব্যর্থ: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
         }
@@ -176,10 +133,7 @@ object PrintUtils {
         val maroonColor = Color.parseColor("#701B1B")
 
         canvas.save()
-        canvas.translate(575f, startY + 8f)
-        canvas.rotate(90f)
-
-        val localStartY = 0f
+        val localStartY = startY
 
         // Header Banner
         val headerPaint = Paint().apply {
@@ -267,7 +221,7 @@ object PrintUtils {
         val gridBorderPaint = Paint().apply {
             color = maroonColor
             style = Paint.Style.STROKE
-            strokeWidth = 1f
+            strokeWidth = 1.5f
         }
         val rowDashPaint = Paint().apply {
             color = Color.parseColor("#C8A8A8")
@@ -440,7 +394,7 @@ object PrintUtils {
 
         val memoCardHtml = """
             <div class="memo-half">
-                <div class="memo-rotated">
+                <div class="memo-container">
                     <div class="header-banner">
                         <h1>$centerName</h1>
                         <p>$subtitle</p>
@@ -456,8 +410,8 @@ object PrintUtils {
                             <thead>
                                 <tr>
                                     <th style="width: 10%;">ক্রমিক নং</th>
-                                    <th style="width: 45%;">খাবারের নাম / বিবরণ</th>
-                                    <th style="width: 15%;">পরিমাণ</th>
+                                    <th style="width: 44%;">খাবারের নাম / বিবরণ</th>
+                                    <th style="width: 16%;">পরিমাণ</th>
                                     <th style="width: 12%;">দর</th>
                                     <th style="width: 18%;">টাকা</th>
                                 </tr>
@@ -478,7 +432,7 @@ object PrintUtils {
                         </div>
                         <div class="signatures-row">
                             <div class="sig-box">
-                                (ক্রেতার স্বাক্ষর : <span class="sig-line"></span>
+                                (ক্রেতার স্বাক্ষর : <span class="sig-line"></span>)
                             </div>
                         </div>
                     </div>
@@ -535,14 +489,10 @@ object PrintUtils {
                         width: 210mm;
                         height: 148mm;
                     }
-                    .memo-rotated {
-                        width: 142mm;
-                        height: 202mm;
-                        position: absolute;
-                        top: 3mm;
-                        left: 205mm;
-                        transform: rotate(90deg);
-                        transform-origin: top left;
+                    .memo-container {
+                        width: 198mm;
+                        height: 142mm;
+                        margin: 3mm auto;
                         background: #FFFDF9;
                         box-sizing: border-box;
                     }
@@ -589,18 +539,14 @@ object PrintUtils {
                         font-weight: bold;
                         color: #701B1B;
                     }
-                    .dashed-divider {
-                        border-bottom: 1.2px dashed #701B1B;
-                        margin: 0 16px 8px 16px;
-                    }
                     .table-wrapper {
                         padding: 0 16px;
                     }
                     .memo-table {
                         width: 100%;
                         border-collapse: collapse;
-                        border: 1.2px solid #701B1B;
-                        border-radius: 4px;
+                        border: 1.5px solid #701B1B;
+                        border-radius: 2px;
                         overflow: hidden;
                     }
                     .memo-table th {
@@ -609,14 +555,14 @@ object PrintUtils {
                         font-weight: bold;
                         font-size: 11px;
                         padding: 4px 4px;
-                        border-right: 1px solid #FFFFFF;
+                        border-right: 1.5px solid #FFFFFF;
                         text-align: center;
                     }
                     .memo-table th:last-child {
                         border-right: none;
                     }
                     .memo-table td {
-                        border-right: 1px solid #701B1B;
+                        border-right: 1.5px solid #701B1B;
                         border-bottom: 1px dashed #C8B8B8;
                         padding: 5px 5px;
                         font-size: 11.5px;
@@ -627,13 +573,13 @@ object PrintUtils {
                         border-right: none;
                     }
                     .sl-col { text-align: center; font-weight: bold; width: 10%; }
-                    .item-col { text-align: left; font-weight: bold; width: 45%; }
-                    .qty-col { text-align: center; width: 15%; }
+                    .item-col { text-align: left; font-weight: bold; width: 44%; }
+                    .qty-col { text-align: center; width: 16%; }
                     .rate-col { text-align: center; width: 12%; }
                     .amount-col { text-align: right; font-weight: bold; width: 18%; }
 
                     .total-row td {
-                        border-top: 1.2px solid #701B1B;
+                        border-top: 1.5px solid #701B1B;
                         border-bottom: none;
                         font-weight: bold;
                     }
@@ -642,7 +588,7 @@ object PrintUtils {
                         font-size: 12px;
                         color: #701B1B;
                         padding-right: 10px;
-                        border-right: 1px solid #701B1B;
+                        border-right: 1.5px solid #701B1B;
                     }
                     .total-amount {
                         text-align: right;
