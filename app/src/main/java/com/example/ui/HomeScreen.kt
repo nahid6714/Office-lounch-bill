@@ -185,11 +185,11 @@ fun HomeScreen(
                         // Quick Presets Row
                         QuickPresetChips(
                             presets = quickPresets,
-                            onPresetClick = { name, qty ->
-                                viewModel.addQuickPresetItem(name, qty)
+                            onPresetClick = { name, qty, rate ->
+                                viewModel.addQuickPresetItem(name, qty, rate)
                             },
-                            onAddCustomPreset = { name, qty ->
-                                viewModel.addCustomQuickPreset(name, qty)
+                            onAddCustomPreset = { name, qty, rate ->
+                                viewModel.addCustomQuickPreset(name, qty, rate)
                             },
                             onRemovePreset = { preset ->
                                 viewModel.removeQuickPreset(preset)

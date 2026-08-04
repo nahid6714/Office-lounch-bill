@@ -77,8 +77,9 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
                     val obj = array.getJSONObject(i)
                     val name = obj.optString("name", "")
                     val qty = obj.optString("defaultQty", "")
+                    val rate = obj.optString("defaultRate", "")
                     if (name.isNotBlank()) {
-                        list.add(QuickPreset(name, qty))
+                        list.add(QuickPreset(name, qty, rate))
                     }
                 }
                 _quickPresets.value = if (list.isNotEmpty()) list else BengaliUtils.defaultQuickPresets
@@ -95,6 +96,7 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
                 val obj = org.json.JSONObject()
                 obj.put("name", p.name)
                 obj.put("defaultQty", p.defaultQty)
+                obj.put("defaultRate", p.defaultRate)
                 array.put(obj)
             }
             prefs.edit().putString("quick_presets_json", array.toString()).apply()
@@ -103,17 +105,18 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun addCustomQuickPreset(name: String, qty: String) {
+    fun addCustomQuickPreset(name: String, qty: String, rate: String = "") {
         val trimmedName = name.trim()
         if (trimmedName.isBlank()) return
 
         val currentList = _quickPresets.value.toMutableList()
         // Replace if already exists or add to beginning
         val existingIndex = currentList.indexOfFirst { it.name.equals(trimmedName, ignoreCase = true) }
+        val newPreset = QuickPreset(trimmedName, qty.trim(), rate.trim())
         if (existingIndex != -1) {
-            currentList[existingIndex] = QuickPreset(trimmedName, qty.trim())
+            currentList[existingIndex] = newPreset
         } else {
-            currentList.add(0, QuickPreset(trimmedName, qty.trim()))
+            currentList.add(0, newPreset)
         }
 
         _quickPresets.value = currentList
@@ -177,15 +180,22 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun addQuickPresetItem(name: String, qty: String) {
+    fun addQuickPresetItem(name: String, qty: String, rate: String = "") {
+        val rateVal = BengaliUtils.parseBengaliNumber(rate)
+        val qtyVal = extractNumber(qty)
+        val calcAmount = if (rateVal > 0) {
+            if (qtyVal > 0) rateVal * qtyVal else rateVal
+        } else 0.0
+
         _currentBillState.update { state ->
             val updatedItems = state.items.toMutableList()
             // Check if there's an empty row at the bottom to fill
             val emptyIndex = updatedItems.indexOfFirst { it.name.isBlank() && it.quantity.isBlank() }
+            val newItem = BillItem(name = name, quantity = qty, rate = if (rate.isBlank()) "0" else rate, amount = calcAmount)
             if (emptyIndex != -1) {
-                updatedItems[emptyIndex] = updatedItems[emptyIndex].copy(name = name, quantity = qty)
+                updatedItems[emptyIndex] = newItem
             } else {
-                updatedItems.add(BillItem(name = name, quantity = qty, rate = "0", amount = 0.0))
+                updatedItems.add(newItem)
             }
             state.copy(items = updatedItems)
         }

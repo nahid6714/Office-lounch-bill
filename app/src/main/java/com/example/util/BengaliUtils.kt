@@ -42,24 +42,25 @@ object BengaliUtils {
     }
 
     val defaultQuickPresets = listOf(
-        QuickPreset("চাল", "২ কেজি"),
-        QuickPreset("ডাল", "২ কেজি"),
-        QuickPreset("লবণ", "১ প্যাকেট"),
-        QuickPreset("মুরগি", "২ কেজি"),
-        QuickPreset("আলু", "১ কেজি"),
-        QuickPreset("সয়াবিন তেল", "২ লিটার"),
-        QuickPreset("ডিম", "১ ডজন"),
-        QuickPreset("মাছ", "১.৫ কেজি"),
-        QuickPreset("পেঁয়াজ", "১ কেজি"),
-        QuickPreset("রসুন ও আদা", "২৫০ গ্রাম"),
-        QuickPreset("কাঁচা মরিচ", "২৫০ গ্রাম"),
-        QuickPreset("লেবু", "৪ টি"),
-        QuickPreset("শাক-সবজি", "১ আঁটি"),
-        QuickPreset("গ্যাস সিলিন্ডার", "১ টি")
+        QuickPreset("চাল", "২ কেজি", "৭০"),
+        QuickPreset("ডাল", "২ কেজি", "১৩০"),
+        QuickPreset("লবণ", "১ প্যাকেট", "৪৫"),
+        QuickPreset("মুরগি", "২ কেজি", "২২০"),
+        QuickPreset("আলু", "১ কেজি", "৩০"),
+        QuickPreset("সয়াবিন তেল", "২ লিটার", "১৬৫"),
+        QuickPreset("ডিম", "১ ডজন", "১৫০"),
+        QuickPreset("মাছ", "১.৫ কেজি", "৩৫০"),
+        QuickPreset("পেঁয়াজ", "১ কেজি", "১০০"),
+        QuickPreset("রসুন ও আদা", "২৫০ গ্রাম", "১২০"),
+        QuickPreset("কাঁচা মরিচ", "২৫০ গ্রাম", "৪০"),
+        QuickPreset("লেবু", "৪ টি", "২০"),
+        QuickPreset("শাক-সবজি", "১ আঁটি", "৩০"),
+        QuickPreset("গ্যাস সিলিন্ডার", "১ টি", "১৫০০")
     )
 }
 
 data class QuickPreset(
     val name: String,
-    val defaultQty: String
+    val defaultQty: String = "",
+    val defaultRate: String = ""
 )

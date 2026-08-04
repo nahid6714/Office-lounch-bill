@@ -25,12 +25,19 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -366,35 +373,83 @@ fun MemoItemRow(
         Spacer(modifier = Modifier.width(4.dp))
 
         // Quantity
+        var showUnitMenu by remember { mutableStateOf(false) }
+        val commonUnits = listOf("কেজি", "লিটার", "পিস", "প্যাকেট", "গ্রাম", "বস্তা", "ডজন", "আঁটি", "টিন")
+
         Box(
             modifier = Modifier
                 .weight(1.4f)
                 .background(Color.White, shape = RoundedCornerShape(4.dp))
                 .border(0.5.dp, WarmBorderColor, RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 6.dp)
+                .padding(horizontal = 4.dp, vertical = 4.dp)
         ) {
-            if (item.quantity.isEmpty()) {
-                Text(
-                    text = "পরিমাণ",
-                    color = Color.Gray.copy(alpha = 0.6f),
-                    fontSize = 13.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    if (item.quantity.isEmpty()) {
+                        Text(
+                            text = "পরিমাণ (কেজি)",
+                            color = Color.Gray.copy(alpha = 0.5f),
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    BasicTextField(
+                        value = item.quantity,
+                        onValueChange = onQtyChange,
+                        textStyle = TextStyle(
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.Black,
+                            textAlign = TextAlign.Center
+                        ),
+                        cursorBrush = SolidColor(MaroonHeaderColor),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("item_qty_input_$index")
+                    )
+                }
+
+                // Small dropdown unit selector button
+                Box {
+                    Surface(
+                        shape = RoundedCornerShape(3.dp),
+                        color = Color(0xFFF2E6DC),
+                        modifier = Modifier
+                            .clickable { showUnitMenu = true }
+                            .padding(horizontal = 2.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "▼",
+                            fontSize = 8.sp,
+                            color = MaroonHeaderColor,
+                            modifier = Modifier.padding(2.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showUnitMenu,
+                        onDismissRequest = { showUnitMenu = false }
+                    ) {
+                        commonUnits.forEach { unit ->
+                            DropdownMenuItem(
+                                text = { Text(unit, fontSize = 12.sp) },
+                                onClick = {
+                                    showUnitMenu = false
+                                    val digits = item.quantity.filter { it.isDigit() || it == '.' || it in '০'..'৯' }
+                                    val bnDigits = BengaliUtils.toBengaliDigits(digits)
+                                    val newQty = if (bnDigits.isNotBlank()) "$bnDigits $unit" else "১ $unit"
+                                    onQtyChange(newQty)
+                                }
+                            )
+                        }
+                    }
+                }
             }
-            BasicTextField(
-                value = item.quantity,
-                onValueChange = onQtyChange,
-                textStyle = TextStyle(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.Black,
-                    textAlign = TextAlign.Center
-                ),
-                cursorBrush = SolidColor(MaroonHeaderColor),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag("item_qty_input_$index")
-            )
         }
 
         Spacer(modifier = Modifier.width(4.dp))

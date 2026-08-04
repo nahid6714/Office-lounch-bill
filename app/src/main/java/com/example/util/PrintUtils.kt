@@ -135,6 +135,13 @@ object PrintUtils {
                         purchaserLabel = purchaserLabel,
                         approverLabel = approverLabel
                     )
+                    val dividerPaint = Paint().apply {
+                        color = Color.parseColor("#A08080")
+                        strokeWidth = 1f
+                        pathEffect = android.graphics.DashPathEffect(floatArrayOf(6f, 4f), 0f)
+                    }
+                    canvas.drawLine(15f, 418f, 580f, 418f, dividerPaint)
+
                     drawSingleVoucherOnCanvas(
                         canvas = canvas,
                         startY = 430f,
@@ -180,10 +187,7 @@ object PrintUtils {
         val maroonColor = Color.parseColor("#5A0000")
 
         canvas.save()
-        canvas.translate(575f, startY + 8f)
-        canvas.rotate(90f)
-
-        val localStartY = 0f
+        val localStartY = startY
 
         // Header Banner
         val headerPaint = Paint().apply {
@@ -191,7 +195,7 @@ object PrintUtils {
             color = maroonColor
             style = Paint.Style.FILL
         }
-        val headerRect = RectF(15f, localStartY, 565f, localStartY + 46f)
+        val headerRect = RectF(15f, localStartY, 580f, localStartY + 46f)
         canvas.drawRect(headerRect, headerPaint)
 
         // Title
@@ -202,7 +206,7 @@ object PrintUtils {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(centerName, 290f, localStartY + 24f, titleTextPaint)
+        canvas.drawText(centerName, 297.5f, localStartY + 24f, titleTextPaint)
 
         // Subtitle
         val subtitleTextPaint = Paint().apply {
@@ -211,7 +215,7 @@ object PrintUtils {
             textSize = 10.5f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(subtitle, 290f, localStartY + 40f, subtitleTextPaint)
+        canvas.drawText(subtitle, 297.5f, localStartY + 40f, subtitleTextPaint)
 
         // Sawtooth Teeth Bar
         val toothWidth = 10f
@@ -222,7 +226,7 @@ object PrintUtils {
             color = maroonColor
             style = Paint.Style.FILL
         }
-        while (toothX < 565f) {
+        while (toothX < 580f) {
             val path = android.graphics.Path().apply {
                 moveTo(toothX, localStartY + 46f)
                 lineTo(toothX + toothWidth / 2, localStartY + 46f + toothHeight)
@@ -242,13 +246,13 @@ object PrintUtils {
             textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("তারিখ : $bnDate", 565f, localStartY + 64f, metaPaintRight)
+        canvas.drawText("তারিখ : $bnDate", 580f, localStartY + 64f, metaPaintRight)
 
         // TABLE GRID CONFIG
         val tableLeft = 15f
-        val tableRight = 565f
+        val tableRight = 580f
         val tableTop = localStartY + 72f
-        val colWidths = floatArrayOf(45f, 240f, 90f, 65f, 110f) // Total width = 550f
+        val colWidths = floatArrayOf(45f, 245f, 95f, 70f, 110f) // Total width = 565f
 
         // Table Header Background
         val tableHeaderRect = RectF(tableLeft, tableTop, tableRight, tableTop + 20f)
@@ -270,10 +274,10 @@ object PrintUtils {
             currentX += colWidths[i]
         }
 
-        // Table Rows (Exactly 14 rows filling half-page height)
+        // Table Rows (14 rows filling half-page height)
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
         val totalRows = 14
-        val rowHeight = 22.5f
+        val rowHeight = 20f
         val gridBorderPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
@@ -305,27 +309,27 @@ object PrintUtils {
             
             // Draw Sl No
             itemBoldPaint.textAlign = Paint.Align.CENTER
-            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 15f, itemBoldPaint)
+            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 14f, itemBoldPaint)
 
             if (r < validItems.size) {
                 val item = validItems[r]
                 // Name
                 itemBoldPaint.textAlign = Paint.Align.LEFT
-                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 15f, itemBoldPaint)
+                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 14f, itemBoldPaint)
 
                 // Qty
                 itemTextPaint.textAlign = Paint.Align.CENTER
                 val bnQty = BengaliUtils.toBengaliDigits(item.quantity)
-                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 15f, itemTextPaint)
+                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 14f, itemTextPaint)
 
                 // Rate
                 val bnRate = if (item.rate == "0" || item.rate.isBlank()) "" else BengaliUtils.toBengaliDigits(item.rate)
-                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 15f, itemTextPaint)
+                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 14f, itemTextPaint)
 
                 // Amount
                 itemBoldPaint.textAlign = Paint.Align.RIGHT
                 val bnAmount = if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(DecimalFormat("#,##0").format(item.amount))}/-"
-                canvas.drawText(bnAmount, tableRight - 6f, rowY + 15f, itemBoldPaint)
+                canvas.drawText(bnAmount, tableRight - 6f, rowY + 14f, itemBoldPaint)
             }
 
             // Row Dashed Bottom Line
@@ -371,7 +375,7 @@ object PrintUtils {
         }
 
         // FOOTER BELOW TABLE
-        val footerStartY = tableBottomY + 12f
+        val footerStartY = tableBottomY + 10f
         val footerPaint = Paint().apply {
             isAntiAlias = true
             color = Color.parseColor("#1A0D08")
@@ -381,14 +385,14 @@ object PrintUtils {
         canvas.drawText("কথায় (টাকার পরিমাণ) : .......................................................................................... টাকা মাত্র।", 15f, footerStartY + 10f, footerPaint)
 
         // Signature Row
-        val sigY = footerStartY + 28f
+        val sigY = footerStartY + 26f
         canvas.drawText("($purchaserLabel : _______________________", 15f, sigY, footerPaint)
         if (approverLabel.isNotBlank()) {
             val approverPaint = Paint(footerPaint).apply { 
                 isAntiAlias = true
                 textAlign = Paint.Align.RIGHT 
             }
-            canvas.drawText("($approverLabel : _______________________", 565f, sigY, approverPaint)
+            canvas.drawText("($approverLabel : _______________________", 580f, sigY, approverPaint)
         }
 
         canvas.restore()
@@ -464,7 +468,7 @@ object PrintUtils {
 
         val memoCardHtml = """
             <div class="memo-half">
-                <div class="memo-rotated">
+                <div class="memo-card">
                     <div class="header-banner">
                         <h1>$centerName</h1>
                         <p>$subtitle</p>
@@ -502,8 +506,9 @@ object PrintUtils {
                         </div>
                         <div class="signatures-row">
                             <div class="sig-box">
-                                (ক্রেতার স্বাক্ষর : <span class="sig-line"></span>
+                                ($purchaserLabel : <span class="sig-line"></span>)
                             </div>
+                            ${if (approverLabel.isNotBlank()) "<div class=\"sig-box\">($approverLabel : <span class=\"sig-line\"></span>)</div>" else ""}
                         </div>
                     </div>
                 </div>
@@ -551,22 +556,18 @@ object PrintUtils {
                     .memo-half {
                         width: 210mm;
                         height: 148mm;
-                        position: relative;
+                        padding: 6mm 10mm;
                         box-sizing: border-box;
+                        position: relative;
                         overflow: hidden;
                     }
                     .empty-half {
                         width: 210mm;
                         height: 148mm;
                     }
-                    .memo-rotated {
-                        width: 142mm;
-                        height: 202mm;
-                        position: absolute;
-                        top: 3mm;
-                        left: 205mm;
-                        transform: rotate(90deg);
-                        transform-origin: top left;
+                    .memo-card {
+                        width: 100%;
+                        height: 100%;
                         background: #FFFDF9;
                         box-sizing: border-box;
                     }
