@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import android.os.Bundle
 import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
 import android.print.PageRange
@@ -42,33 +43,63 @@ object PrintUtils {
         approverLabel: String = "অনুমোদনকারীর স্বাক্ষর",
         position: PrintPosition = PrintPosition.TOP
     ) {
-        val htmlContent = generateHtmlVoucher(
-            centerName = centerName,
-            subtitle = subtitle,
-            dateString = dateString,
-            items = items,
-            totalAmount = totalAmount,
-            purchaserLabel = purchaserLabel,
-            approverLabel = approverLabel,
-            position = position
-        )
+        val printManager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager
+        val jobName = "Food_Bill_${dateString.replace("/", "-")}"
 
-        val webView = WebView(context)
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView, url: String) {
-                val printManager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager
-                val jobName = "Food_Bill_${dateString.replace("/", "-")}"
-                val printAdapter = webView.createPrintDocumentAdapter(jobName)
-                
-                val builder = PrintAttributes.Builder()
-                builder.setMediaSize(PrintAttributes.MediaSize.ISO_A4.asPortrait())
-                builder.setMinMargins(PrintAttributes.Margins(0, 0, 0, 0))
-                
-                printManager?.print(jobName, printAdapter, builder.build())
+        val printAdapter = object : PrintDocumentAdapter() {
+            override fun onLayout(
+                oldAttributes: PrintAttributes?,
+                newAttributes: PrintAttributes?,
+                cancellationSignal: CancellationSignal?,
+                callback: LayoutResultCallback?,
+                extras: Bundle?
+            ) {
+                if (cancellationSignal?.isCanceled == true) {
+                    callback?.onLayoutCancelled()
+                    return
+                }
+                val info = PrintDocumentInfo.Builder("$jobName.pdf")
+                    .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+                    .setPageCount(1)
+                    .build()
+                callback?.onLayoutFinished(info, true)
+            }
+
+            override fun onWrite(
+                pages: Array<out PageRange>?,
+                destination: ParcelFileDescriptor?,
+                cancellationSignal: CancellationSignal?,
+                callback: WriteResultCallback?
+            ) {
+                if (destination == null) return
+                val pdfDocument = createFoodBillPdfDocument(
+                    centerName = centerName,
+                    subtitle = subtitle,
+                    dateString = dateString,
+                    items = items,
+                    totalAmount = totalAmount,
+                    purchaserLabel = purchaserLabel,
+                    approverLabel = approverLabel,
+                    position = position
+                )
+                try {
+                    FileOutputStream(destination.fileDescriptor).use { out ->
+                        pdfDocument.writeTo(out)
+                    }
+                    callback?.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
+                } catch (e: Exception) {
+                    callback?.onWriteFailed(e.message)
+                } finally {
+                    pdfDocument.close()
+                }
             }
         }
 
-        webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
+        val builder = PrintAttributes.Builder()
+        builder.setMediaSize(PrintAttributes.MediaSize.ISO_A4.asPortrait())
+        builder.setMinMargins(PrintAttributes.Margins(0, 0, 0, 0))
+
+        printManager?.print(jobName, printAdapter, builder.build())
     }
 
     fun shareFoodBillPdf(
@@ -83,80 +114,16 @@ object PrintUtils {
         position: PrintPosition = PrintPosition.TOP
     ) {
         try {
-            val pdfDocument = PdfDocument()
-            // Standard A4 dimensions in points: 595 x 842
-            val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-            val page = pdfDocument.startPage(pageInfo)
-            val canvas = page.canvas
-
-            // Off-white paper background
-            val bgPaint = Paint().apply {
-                color = Color.parseColor("#FFFDF9")
-                style = Paint.Style.FILL
-            }
-            canvas.drawRect(0f, 0f, 595f, 842f, bgPaint)
-
-            when (position) {
-                PrintPosition.TOP -> {
-                    drawSingleVoucherOnCanvas(
-                        canvas = canvas,
-                        startY = 15f,
-                        centerName = centerName,
-                        subtitle = subtitle,
-                        dateString = dateString,
-                        items = items,
-                        totalAmount = totalAmount,
-                        purchaserLabel = purchaserLabel,
-                        approverLabel = approverLabel
-                    )
-                }
-                PrintPosition.BOTTOM -> {
-                    drawSingleVoucherOnCanvas(
-                        canvas = canvas,
-                        startY = 430f,
-                        centerName = centerName,
-                        subtitle = subtitle,
-                        dateString = dateString,
-                        items = items,
-                        totalAmount = totalAmount,
-                        purchaserLabel = purchaserLabel,
-                        approverLabel = approverLabel
-                    )
-                }
-                PrintPosition.BOTH -> {
-                    drawSingleVoucherOnCanvas(
-                        canvas = canvas,
-                        startY = 15f,
-                        centerName = centerName,
-                        subtitle = subtitle,
-                        dateString = dateString,
-                        items = items,
-                        totalAmount = totalAmount,
-                        purchaserLabel = purchaserLabel,
-                        approverLabel = approverLabel
-                    )
-                    val dividerPaint = Paint().apply {
-                        color = Color.parseColor("#A08080")
-                        strokeWidth = 1f
-                        pathEffect = android.graphics.DashPathEffect(floatArrayOf(6f, 4f), 0f)
-                    }
-                    canvas.drawLine(15f, 418f, 580f, 418f, dividerPaint)
-
-                    drawSingleVoucherOnCanvas(
-                        canvas = canvas,
-                        startY = 430f,
-                        centerName = centerName,
-                        subtitle = subtitle,
-                        dateString = dateString,
-                        items = items,
-                        totalAmount = totalAmount,
-                        purchaserLabel = purchaserLabel,
-                        approverLabel = approverLabel
-                    )
-                }
-            }
-
-            pdfDocument.finishPage(page)
+            val pdfDocument = createFoodBillPdfDocument(
+                centerName = centerName,
+                subtitle = subtitle,
+                dateString = dateString,
+                items = items,
+                totalAmount = totalAmount,
+                purchaserLabel = purchaserLabel,
+                approverLabel = approverLabel,
+                position = position
+            )
 
             val cacheDir = File(context.cacheDir, "food_bills").apply { mkdirs() }
             val pdfFile = File(cacheDir, "Food_Bill_${dateString.replace("/", "-")}.pdf")
@@ -173,6 +140,93 @@ object PrintUtils {
         }
     }
 
+    private fun createFoodBillPdfDocument(
+        centerName: String,
+        subtitle: String,
+        dateString: String,
+        items: List<BillItem>,
+        totalAmount: Double,
+        purchaserLabel: String,
+        approverLabel: String,
+        position: PrintPosition
+    ): PdfDocument {
+        val pdfDocument = PdfDocument()
+        // Standard A4 dimensions in points: 595 x 842
+        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+        val page = pdfDocument.startPage(pageInfo)
+        val canvas = page.canvas
+
+        // Off-white paper background
+        val bgPaint = Paint().apply {
+            color = Color.parseColor("#FFFDF9")
+            style = Paint.Style.FILL
+        }
+        canvas.drawRect(0f, 0f, 595f, 842f, bgPaint)
+
+        when (position) {
+            PrintPosition.TOP -> {
+                drawSingleVoucherOnCanvas(
+                    canvas = canvas,
+                    startY = 0f,
+                    centerName = centerName,
+                    subtitle = subtitle,
+                    dateString = dateString,
+                    items = items,
+                    totalAmount = totalAmount,
+                    purchaserLabel = purchaserLabel,
+                    approverLabel = approverLabel
+                )
+            }
+            PrintPosition.BOTTOM -> {
+                drawSingleVoucherOnCanvas(
+                    canvas = canvas,
+                    startY = 421f,
+                    centerName = centerName,
+                    subtitle = subtitle,
+                    dateString = dateString,
+                    items = items,
+                    totalAmount = totalAmount,
+                    purchaserLabel = purchaserLabel,
+                    approverLabel = approverLabel
+                )
+            }
+            PrintPosition.BOTH -> {
+                drawSingleVoucherOnCanvas(
+                    canvas = canvas,
+                    startY = 0f,
+                    centerName = centerName,
+                    subtitle = subtitle,
+                    dateString = dateString,
+                    items = items,
+                    totalAmount = totalAmount,
+                    purchaserLabel = purchaserLabel,
+                    approverLabel = approverLabel
+                )
+                val dividerPaint = Paint().apply {
+                    color = Color.parseColor("#A08080")
+                    strokeWidth = 1f
+                    pathEffect = android.graphics.DashPathEffect(floatArrayOf(6f, 4f), 0f)
+                }
+                canvas.drawLine(15f, 421f, 580f, 421f, dividerPaint)
+
+                drawSingleVoucherOnCanvas(
+                    canvas = canvas,
+                    startY = 421f,
+                    centerName = centerName,
+                    subtitle = subtitle,
+                    dateString = dateString,
+                    items = items,
+                    totalAmount = totalAmount,
+                    purchaserLabel = purchaserLabel,
+                    approverLabel = approverLabel
+                )
+            }
+        }
+
+        pdfDocument.finishPage(page)
+        return pdfDocument
+    }
+
     private fun drawSingleVoucherOnCanvas(
         canvas: android.graphics.Canvas,
         startY: Float,
@@ -187,7 +241,14 @@ object PrintUtils {
         val maroonColor = Color.parseColor("#5A0000")
 
         canvas.save()
-        val localStartY = startY
+        // Rotate -90 degrees counter-clockwise so that:
+        // - Header banner is on the RIGHT side of A4 page (Canvas X = 560f)
+        // - Signatures row is on the LEFT side of A4 page (Canvas X = 60f)
+        // - Table rows run top-to-bottom within the top half of A4 page (Canvas Y = startY + 15f to startY + 395f)
+        canvas.translate(560f, startY + 15f)
+        canvas.rotate(-90f)
+
+        val localStartY = 0f
 
         // Header Banner
         val headerPaint = Paint().apply {
@@ -195,42 +256,42 @@ object PrintUtils {
             color = maroonColor
             style = Paint.Style.FILL
         }
-        val headerRect = RectF(15f, localStartY, 580f, localStartY + 46f)
+        val headerRect = RectF(10f, localStartY, 380f, localStartY + 44f)
         canvas.drawRect(headerRect, headerPaint)
 
         // Title
         val titleTextPaint = Paint().apply {
             isAntiAlias = true
             color = Color.WHITE
-            textSize = 18f
+            textSize = 16f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(centerName, 297.5f, localStartY + 24f, titleTextPaint)
+        canvas.drawText(centerName, 195f, localStartY + 23f, titleTextPaint)
 
         // Subtitle
         val subtitleTextPaint = Paint().apply {
             isAntiAlias = true
             color = Color.WHITE
-            textSize = 10.5f
+            textSize = 10f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(subtitle, 297.5f, localStartY + 40f, subtitleTextPaint)
+        canvas.drawText(subtitle, 195f, localStartY + 38f, subtitleTextPaint)
 
         // Sawtooth Teeth Bar
         val toothWidth = 10f
         val toothHeight = 5f
-        var toothX = 15f
+        var toothX = 10f
         val toothPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
             style = Paint.Style.FILL
         }
-        while (toothX < 580f) {
+        while (toothX < 380f) {
             val path = android.graphics.Path().apply {
-                moveTo(toothX, localStartY + 46f)
-                lineTo(toothX + toothWidth / 2, localStartY + 46f + toothHeight)
-                lineTo(toothX + toothWidth, localStartY + 46f)
+                moveTo(toothX, localStartY + 44f)
+                lineTo(toothX + toothWidth / 2, localStartY + 44f + toothHeight)
+                lineTo(toothX + toothWidth, localStartY + 44f)
                 close()
             }
             canvas.drawPath(path, toothPaint)
@@ -241,18 +302,18 @@ object PrintUtils {
         val metaPaintRight = Paint().apply {
             isAntiAlias = true
             color = maroonColor
-            textSize = 11f
+            textSize = 10.5f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("তারিখ : $bnDate", 580f, localStartY + 64f, metaPaintRight)
+        canvas.drawText("তারিখ : $bnDate", 380f, localStartY + 64f, metaPaintRight)
 
         // TABLE GRID CONFIG
-        val tableLeft = 15f
-        val tableRight = 580f
+        val tableLeft = 10f
+        val tableRight = 380f
         val tableTop = localStartY + 72f
-        val colWidths = floatArrayOf(45f, 245f, 95f, 70f, 110f) // Total width = 565f
+        val colWidths = floatArrayOf(35f, 160f, 60f, 45f, 70f) // Total width = 370f
 
         // Table Header Background
         val tableHeaderRect = RectF(tableLeft, tableTop, tableRight, tableTop + 20f)
@@ -262,7 +323,7 @@ object PrintUtils {
         val headerTextPaint = Paint().apply {
             isAntiAlias = true
             color = Color.WHITE
-            textSize = 10.5f
+            textSize = 10f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
@@ -277,12 +338,12 @@ object PrintUtils {
         // Table Rows (14 rows filling half-page height)
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
         val totalRows = 14
-        val rowHeight = 20f
+        val rowHeight = 22f
         val gridBorderPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
             style = Paint.Style.STROKE
-            strokeWidth = 1.5f
+            strokeWidth = 1.2f
         }
         val rowDashPaint = Paint().apply {
             isAntiAlias = true
@@ -294,12 +355,12 @@ object PrintUtils {
         val itemTextPaint = Paint().apply {
             isAntiAlias = true
             color = Color.parseColor("#1A0D08")
-            textSize = 10f
+            textSize = 9.5f
         }
         val itemBoldPaint = Paint().apply {
             isAntiAlias = true
             color = Color.parseColor("#1A0D08")
-            textSize = 10f
+            textSize = 9.5f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
         }
 
@@ -309,27 +370,27 @@ object PrintUtils {
             
             // Draw Sl No
             itemBoldPaint.textAlign = Paint.Align.CENTER
-            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 14f, itemBoldPaint)
+            canvas.drawText(slNo, tableLeft + colWidths[0] / 2, rowY + 15f, itemBoldPaint)
 
             if (r < validItems.size) {
                 val item = validItems[r]
                 // Name
                 itemBoldPaint.textAlign = Paint.Align.LEFT
-                canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + 14f, itemBoldPaint)
+                canvas.drawText(item.name, tableLeft + colWidths[0] + 5f, rowY + 15f, itemBoldPaint)
 
                 // Qty
                 itemTextPaint.textAlign = Paint.Align.CENTER
                 val bnQty = BengaliUtils.toBengaliDigits(item.quantity)
-                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 14f, itemTextPaint)
+                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2, rowY + 15f, itemTextPaint)
 
                 // Rate
                 val bnRate = if (item.rate == "0" || item.rate.isBlank()) "" else BengaliUtils.toBengaliDigits(item.rate)
-                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 14f, itemTextPaint)
+                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2, rowY + 15f, itemTextPaint)
 
                 // Amount
                 itemBoldPaint.textAlign = Paint.Align.RIGHT
                 val bnAmount = if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(DecimalFormat("#,##0").format(item.amount))}/-"
-                canvas.drawText(bnAmount, tableRight - 6f, rowY + 14f, itemBoldPaint)
+                canvas.drawText(bnAmount, tableRight - 5f, rowY + 15f, itemBoldPaint)
             }
 
             // Row Dashed Bottom Line
@@ -345,24 +406,24 @@ object PrintUtils {
         val totalLabelPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
-            textSize = 10.5f
+            textSize = 10f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
-        canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 8f, totalRowY + 13f, totalLabelPaint)
+        canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 5f, totalRowY + 14f, totalLabelPaint)
 
         // Total Value
         val totalValPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
-            textSize = 11f
+            textSize = 10.5f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
         val bnTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
-        canvas.drawText(bnTotal, tableRight - 6f, totalRowY + 13f, totalValPaint)
+        canvas.drawText(bnTotal, tableRight - 5f, totalRowY + 14f, totalValPaint)
 
-        val tableBottomY = totalRowY + 16f
+        val tableBottomY = totalRowY + 18f
         canvas.drawLine(tableLeft, tableBottomY, tableRight, tableBottomY, gridBorderPaint)
 
         // Outer Table Rect Border & Vertical Column Grid Lines
@@ -375,24 +436,24 @@ object PrintUtils {
         }
 
         // FOOTER BELOW TABLE
-        val footerStartY = tableBottomY + 10f
+        val footerStartY = tableBottomY + 12f
         val footerPaint = Paint().apply {
             isAntiAlias = true
             color = Color.parseColor("#1A0D08")
             textSize = 9.5f
         }
 
-        canvas.drawText("কথায় (টাকার পরিমাণ) : .......................................................................................... টাকা মাত্র।", 15f, footerStartY + 10f, footerPaint)
+        canvas.drawText("কথায় (টাকার পরিমাণ) : .................................................................... টাকা মাত্র।", 10f, footerStartY + 10f, footerPaint)
 
         // Signature Row
-        val sigY = footerStartY + 26f
-        canvas.drawText("($purchaserLabel : _______________________", 15f, sigY, footerPaint)
+        val sigY = footerStartY + 30f
+        canvas.drawText("($purchaserLabel : _______________________)", 10f, sigY, footerPaint)
         if (approverLabel.isNotBlank()) {
             val approverPaint = Paint(footerPaint).apply { 
                 isAntiAlias = true
                 textAlign = Paint.Align.RIGHT 
             }
-            canvas.drawText("($approverLabel : _______________________", 580f, sigY, approverPaint)
+            canvas.drawText("($approverLabel : _______________________)", 380f, sigY, approverPaint)
         }
 
         canvas.restore()
