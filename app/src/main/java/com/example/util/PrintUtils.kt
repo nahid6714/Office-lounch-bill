@@ -199,7 +199,7 @@ object PrintUtils {
             isAntiAlias = true
             color = Color.WHITE
             textSize = 18f
-            isFakeBoldText = true
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
         canvas.drawText(centerName, 290f, localStartY + 24f, titleTextPaint)
@@ -238,7 +238,7 @@ object PrintUtils {
             isAntiAlias = true
             color = maroonColor
             textSize = 11f
-            isFakeBoldText = true
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
@@ -259,7 +259,7 @@ object PrintUtils {
             isAntiAlias = true
             color = Color.WHITE
             textSize = 10.5f
-            isFakeBoldText = true
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
         val colTitles = arrayOf("ক্রমিক নং", "খাবারের নাম / বিবরণ", "পরিমাণ", "দর", "টাকা")
@@ -296,7 +296,7 @@ object PrintUtils {
             isAntiAlias = true
             color = Color.parseColor("#1A0D08")
             textSize = 10f
-            isFakeBoldText = true
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
         }
 
         var rowY = tableTop + 20f
@@ -342,7 +342,7 @@ object PrintUtils {
             isAntiAlias = true
             color = maroonColor
             textSize = 10.5f
-            isFakeBoldText = true
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
         canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 8f, totalRowY + 13f, totalLabelPaint)
@@ -352,7 +352,7 @@ object PrintUtils {
             isAntiAlias = true
             color = maroonColor
             textSize = 11f
-            isFakeBoldText = true
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
         val bnTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
