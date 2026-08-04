@@ -290,7 +290,7 @@ fun MemoVoucherCard(
                 // Signatures Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.Start
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -300,20 +300,6 @@ fun MemoVoucherCard(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = state.purchaserLabel,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.DarkGray
-                        )
-                    }
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.width(140.dp)
-                    ) {
-                        Divider(color = MaroonTextColor, thickness = 1.dp)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = state.approverLabel,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.DarkGray

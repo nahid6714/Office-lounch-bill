@@ -560,9 +560,8 @@ object PrintUtils {
                         </div>
                         <div class="signatures-row">
                             <div class="sig-box">
-                                ($purchaserLabel : <span class="sig-line"></span>)
+                                $purchaserLabel : <span class="sig-line"></span>
                             </div>
-                            ${if (approverLabel.isNotBlank()) "<div class=\"sig-box\">($approverLabel : <span class=\"sig-line\"></span>)</div>" else ""}
                         </div>
                     </div>
                 </div>

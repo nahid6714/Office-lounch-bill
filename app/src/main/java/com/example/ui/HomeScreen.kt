@@ -185,6 +185,7 @@ fun HomeScreen(
                         // Quick Presets Row
                         QuickPresetChips(
                             presets = quickPresets,
+                            addedItemNames = currentBillState.items.map { it.name.trim() }.filter { it.isNotBlank() }.toSet(),
                             onPresetClick = { name, qty, rate ->
                                 viewModel.addQuickPresetItem(name, qty, rate)
                             },

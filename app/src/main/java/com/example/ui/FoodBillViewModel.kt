@@ -181,6 +181,9 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun addQuickPresetItem(name: String, qty: String, rate: String = "") {
+        val trimmedName = name.trim()
+        if (trimmedName.isBlank()) return
+
         val rateVal = BengaliUtils.parseBengaliNumber(rate)
         val qtyVal = extractNumber(qty)
         val calcAmount = if (rateVal > 0) {
@@ -189,9 +192,12 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
 
         _currentBillState.update { state ->
             val updatedItems = state.items.toMutableList()
-            // Check if there's an empty row at the bottom to fill
+            if (updatedItems.any { it.name.trim() == trimmedName && it.name.isNotBlank() }) {
+                return@update state
+            }
+            // Check if there's an empty row to fill
             val emptyIndex = updatedItems.indexOfFirst { it.name.isBlank() && it.quantity.isBlank() }
-            val newItem = BillItem(name = name, quantity = qty, rate = if (rate.isBlank()) "0" else rate, amount = calcAmount)
+            val newItem = BillItem(name = trimmedName, quantity = qty, rate = if (rate.isBlank()) "0" else rate, amount = calcAmount)
             if (emptyIndex != -1) {
                 updatedItems[emptyIndex] = newItem
             } else {

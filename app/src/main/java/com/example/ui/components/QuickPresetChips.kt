@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restore
@@ -50,6 +51,7 @@ import com.example.util.QuickPreset
 @Composable
 fun QuickPresetChips(
     presets: List<QuickPreset>,
+    addedItemNames: Set<String> = emptySet(),
     onPresetClick: (name: String, qty: String, rate: String) -> Unit,
     onAddCustomPreset: (name: String, qty: String, rate: String) -> Unit,
     onRemovePreset: (preset: QuickPreset) -> Unit,
@@ -120,13 +122,17 @@ fun QuickPresetChips(
                 .testTag("quick_preset_chips_flow")
         ) {
             presets.forEach { preset ->
+                val isAdded = addedItemNames.contains(preset.name.trim())
                 PresetChip(
                     preset = preset,
+                    isAdded = isAdded,
                     onClick = {
-                        if (preset.defaultQty.isBlank()) {
-                            promptPreset = preset
-                        } else {
-                            onPresetClick(preset.name, preset.defaultQty, preset.defaultRate)
+                        if (!isAdded) {
+                            if (preset.defaultQty.isBlank()) {
+                                promptPreset = preset
+                            } else {
+                                onPresetClick(preset.name, preset.defaultQty, preset.defaultRate)
+                            }
                         }
                     }
                 )
@@ -682,14 +688,20 @@ fun PromptQuantityDialog(
 @Composable
 fun PresetChip(
     preset: QuickPreset,
+    isAdded: Boolean = false,
     onClick: () -> Unit
 ) {
+    val bgColor = if (isAdded) Color(0xFFEBE6E1) else Color(0xFFF2E6DC)
+    val textColor = if (isAdded) Color(0xFFA0948C) else MaroonTextColor
+    val subTextColor = if (isAdded) Color(0xFFB5A8A0) else Color.Gray
+    val iconColor = if (isAdded) Color(0xFFA0948C) else MaroonHeaderColor
+
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFF2E6DC),
-        shadowElevation = 1.dp,
+        color = bgColor,
+        shadowElevation = if (isAdded) 0.dp else 1.dp,
         modifier = Modifier
-            .clickable { onClick() }
+            .clickable(enabled = !isAdded) { onClick() }
             .testTag("preset_chip_${preset.name}")
     ) {
         Row(
@@ -697,9 +709,9 @@ fun PresetChip(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Add,
+                imageVector = if (isAdded) Icons.Default.Check else Icons.Default.Add,
                 contentDescription = null,
-                tint = MaroonHeaderColor,
+                tint = iconColor,
                 modifier = Modifier
                     .height(14.dp)
                     .width(14.dp)
@@ -708,8 +720,8 @@ fun PresetChip(
             Text(
                 text = preset.name,
                 fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaroonTextColor
+                fontWeight = if (isAdded) FontWeight.Normal else FontWeight.SemiBold,
+                color = textColor
             )
             if (preset.defaultQty.isNotBlank() || preset.defaultRate.isNotBlank()) {
                 Spacer(modifier = Modifier.width(4.dp))
@@ -723,7 +735,7 @@ fun PresetChip(
                 Text(
                     text = "($subText)",
                     fontSize = 11.sp,
-                    color = Color.Gray
+                    color = subTextColor
                 )
             }
         }
