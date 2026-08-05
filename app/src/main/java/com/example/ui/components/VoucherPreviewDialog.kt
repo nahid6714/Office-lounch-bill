@@ -312,15 +312,19 @@ private fun SingleMemoVoucherCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "ক্রমিক নং",
-                            modifier = Modifier.weight(0.9f),
-                            style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+                            text = "ক্র. নং",
+                            modifier = Modifier.weight(1.0f),
+                            style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center),
+                            maxLines = 1,
+                            softWrap = false
                         )
                         Box(modifier = Modifier.width(1.2.dp).height(12.dp).background(Color.White))
                         Text(
                             text = "খাবারের নাম / বিবরণ",
-                            modifier = Modifier.weight(2.6f).padding(start = 4.dp),
-                            style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Start)
+                            modifier = Modifier.weight(2.5f).padding(start = 4.dp),
+                            style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Start),
+                            maxLines = 1,
+                            softWrap = false
                         )
                         Box(modifier = Modifier.width(1.2.dp).height(12.dp).background(Color.White))
                         Text(
@@ -355,14 +359,14 @@ private fun SingleMemoVoucherCard(
                         ) {
                             Text(
                                 text = slNo,
-                                modifier = Modifier.weight(0.9f),
+                                modifier = Modifier.weight(1.0f),
                                 style = TextStyle(fontSize = itemTextSize, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
                             )
                             Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(darkMaroonBorder))
 
                             Text(
                                 text = item?.name ?: "",
-                                modifier = Modifier.weight(2.6f).padding(start = 4.dp),
+                                modifier = Modifier.weight(2.5f).padding(start = 4.dp),
                                 style = TextStyle(fontSize = itemTextSize, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810))
                             )
                             Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(darkMaroonBorder))

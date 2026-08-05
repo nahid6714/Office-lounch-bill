@@ -310,7 +310,7 @@ object PrintUtils {
         val tableLeft = 10f
         val tableRight = 395f
         val tableTop = localStartY + 82f
-        val colWidths = floatArrayOf(35f, 170f, 60f, 48f, 72f) // Total width = 385f
+        val colWidths = floatArrayOf(45f, 160f, 60f, 48f, 72f) // Total width = 385f
 
         // Table Header Background
         val tableHeaderRect = RectF(tableLeft, tableTop, tableRight, tableTop + 25f)
@@ -320,11 +320,11 @@ object PrintUtils {
         val headerTextPaint = Paint().apply {
             isAntiAlias = true
             color = Color.WHITE
-            textSize = 11.5f
+            textSize = 10.5f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        val colTitles = arrayOf("ক্রমিক নং", "খাবারের নাম / বিবরণ", "পরিমাণ", "দর", "টাকা")
+        val colTitles = arrayOf("ক্র. নং", "খাবারের নাম / বিবরণ", "পরিমাণ", "দর", "টাকা")
         var currentX = tableLeft
         for (i in 0 until 5) {
             val colCenterX = currentX + colWidths[i] / 2
@@ -542,8 +542,8 @@ object PrintUtils {
                         <table class="memo-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 10%;">ক্রমিক নং</th>
-                                    <th style="width: 45%;">খাবারের নাম / বিবরণ</th>
+                                    <th style="width: 12%;">ক্র. নং</th>
+                                    <th style="width: 43%;">খাবারের নাম / বিবরণ</th>
                                     <th style="width: 15%;">পরিমাণ</th>
                                     <th style="width: 12%;">দর</th>
                                     <th style="width: 18%;">টাকা</th>
@@ -688,9 +688,10 @@ object PrintUtils {
                         color: #FFFFFF;
                         font-weight: bold;
                         font-size: 11px;
-                        padding: 4px 4px;
+                        padding: 4px 2px;
                         border-right: 1.5px solid #FFFFFF;
                         text-align: center;
+                        white-space: nowrap;
                     }
                     .memo-table th:last-child {
                         border-right: none;
@@ -706,8 +707,8 @@ object PrintUtils {
                     .memo-table td:last-child {
                         border-right: none;
                     }
-                    .sl-col { text-align: center; font-weight: bold; width: 10%; }
-                    .item-col { text-align: left; font-weight: bold; width: 45%; }
+                    .sl-col { text-align: center; font-weight: bold; width: 12%; }
+                    .item-col { text-align: left; font-weight: bold; width: 43%; }
                     .qty-col { text-align: center; width: 15%; }
                     .rate-col { text-align: center; width: 12%; }
                     .amount-col { text-align: right; font-weight: bold; width: 18%; }
