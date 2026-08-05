@@ -131,13 +131,13 @@ fun SettingsScreen(
 
                 Button(
                     onClick = onResetTemplate,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaroonHeaderColor),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonHeaderColor, contentColor = Color.White),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("reset_template_button")
                 ) {
-                    Text("নতুন মেমো ডিফল্ট টেমপ্লেটে রিসেট করুন", fontWeight = FontWeight.Bold)
+                    Text("নতুন মেমো ডিফল্ট টেমপ্লেটে রিসেট করুন", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }

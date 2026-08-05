@@ -284,7 +284,7 @@ fun ManageQuickPresetsDialog(
     var newItemAmountVal by remember { mutableStateOf("") }
     var selectedUnit by remember { mutableStateOf("") }
 
-    val commonUnits = listOf("কেজি", "লিটার", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি", "বস্তা", "টিন")
+    val commonUnits = listOf("কেজি", "লিটার", "পোয়া", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি")
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -723,7 +723,7 @@ fun PromptQuantityDialog(
     var amountVal by remember { mutableStateOf(initialAmount) }
     var selectedUnit by remember { mutableStateOf("") }
 
-    val commonUnits = listOf("কেজি", "লিটার", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি", "বস্তা")
+    val commonUnits = listOf("কেজি", "লিটার", "পোয়া", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি")
     val quickQtyOptions = listOf("১", "২", "৩", "৫", "১০", "২৫০ গ্রাম", "৫০০ গ্রাম")
 
     AlertDialog(

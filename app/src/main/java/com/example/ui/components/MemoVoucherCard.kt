@@ -398,7 +398,7 @@ fun MemoItemRow(
 
         // Quantity
         var showUnitMenu by remember { mutableStateOf(false) }
-        val commonUnits = listOf("কেজি", "লিটার", "পিস", "প্যাকেট", "গ্রাম", "বস্তা", "ডজন", "আঁটি", "টিন")
+        val commonUnits = listOf("কেজি", "লিটার", "পোয়া", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি")
 
         Box(
             modifier = Modifier

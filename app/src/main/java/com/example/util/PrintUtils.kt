@@ -203,7 +203,7 @@ object PrintUtils {
                     approverLabel = approverLabel
                 )
                 val dividerPaint = Paint().apply {
-                    color = Color.parseColor("#A08080")
+                    color = Color.parseColor("#28684F")
                     strokeWidth = 1f
                     pathEffect = android.graphics.DashPathEffect(floatArrayOf(6f, 4f), 0f)
                 }
@@ -238,7 +238,7 @@ object PrintUtils {
         purchaserLabel: String,
         approverLabel: String = ""
     ) {
-        val maroonColor = Color.parseColor("#5A0000")
+        val maroonColor = Color.parseColor("#123528")
 
         canvas.save()
         // Rotate -90 degrees counter-clockwise with clean A4 page margins
@@ -348,7 +348,7 @@ object PrintUtils {
         }
         val rowDashPaint = Paint().apply {
             isAntiAlias = true
-            color = Color.parseColor("#C8A8A8")
+            color = Color.parseColor("#C2D4CC")
             strokeWidth = 0.8f
             pathEffect = android.graphics.DashPathEffect(floatArrayOf(4f, 3f), 0f)
         }
@@ -627,7 +627,7 @@ object PrintUtils {
                         box-sizing: border-box;
                     }
                     .header-banner {
-                        background-color: #5A0000;
+                        background-color: #123528;
                         color: #FFFFFF;
                         text-align: center;
                         padding: 8px 6px 6px 6px;
@@ -645,7 +645,7 @@ object PrintUtils {
                     }
                     .sawtooth-bar {
                         height: 6px;
-                        background-color: #5A0000;
+                        background-color: #123528;
                         clip-path: polygon(
                             0% 0%, 100% 0%,
                             100% 50%, 98% 100%, 96% 50%, 94% 100%, 92% 50%, 90% 100%,
@@ -667,10 +667,10 @@ object PrintUtils {
                         padding: 4px 16px;
                         font-size: 12px;
                         font-weight: bold;
-                        color: #5A0000;
+                        color: #123528;
                     }
                     .dashed-divider {
-                        border-bottom: 1.2px dashed #5A0000;
+                        border-bottom: 1.2px dashed #123528;
                         margin: 0 16px 8px 16px;
                     }
                     .table-wrapper {
@@ -679,12 +679,12 @@ object PrintUtils {
                     .memo-table {
                         width: 100%;
                         border-collapse: collapse;
-                        border: 1.8px solid #5A0000;
+                        border: 1.8px solid #123528;
                         border-radius: 4px;
                         overflow: hidden;
                     }
                     .memo-table th {
-                        background-color: #5A0000;
+                        background-color: #123528;
                         color: #FFFFFF;
                         font-weight: bold;
                         font-size: 11px;
@@ -697,8 +697,8 @@ object PrintUtils {
                         border-right: none;
                     }
                     .memo-table td {
-                        border-right: 1.5px solid #5A0000;
-                        border-bottom: 1px dashed #C8B8B8;
+                        border-right: 1.5px solid #123528;
+                        border-bottom: 1px dashed #C2D4CC;
                         padding: $cellPaddingCss;
                         font-size: $fontSizeCss;
                         color: #2C1810;
@@ -714,21 +714,21 @@ object PrintUtils {
                     .amount-col { text-align: right; font-weight: bold; width: 18%; }
 
                     .total-row td {
-                        border-top: 1.8px solid #5A0000;
+                        border-top: 1.8px solid #123528;
                         border-bottom: none;
                         font-weight: bold;
                     }
                     .total-label {
                         text-align: right;
                         font-size: 12px;
-                        color: #5A0000;
+                        color: #123528;
                         padding-right: 10px;
-                        border-right: 1.5px solid #5A0000;
+                        border-right: 1.5px solid #123528;
                     }
                     .total-amount {
                         text-align: right;
                         font-size: 13px;
-                        color: #5A0000;
+                        color: #123528;
                         font-weight: bold;
                     }
                     .footer-section {
@@ -753,7 +753,7 @@ object PrintUtils {
                     .sig-line {
                         display: inline-block;
                         width: 140px;
-                        border-bottom: 1px solid #5A0000;
+                        border-bottom: 1px solid #123528;
                         margin-left: 6px;
                     }
                 </style>
