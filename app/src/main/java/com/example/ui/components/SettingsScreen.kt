@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,7 +76,10 @@ fun SettingsScreen(
                     onValueChange = onCenterNameChange,
                     label = { Text("মেডিকেল বা প্রতিষ্ঠানের নাম") },
                     singleLine = true,
+                    textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp),
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
                         focusedBorderColor = DarkForestGreen
                     ),
                     modifier = Modifier
@@ -90,7 +94,10 @@ fun SettingsScreen(
                     onValueChange = onSubtitleChange,
                     label = { Text("মেমোর সাবটাইটেল / শিরোনাম") },
                     singleLine = true,
+                    textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 15.sp),
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
                         focusedBorderColor = DarkForestGreen
                     ),
                     modifier = Modifier

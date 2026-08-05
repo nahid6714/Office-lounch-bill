@@ -380,16 +380,22 @@ fun MemoItemRow(
                     fontSize = 14.sp
                 )
             }
+            val nameFontSize = when {
+                item.name.length > 35 -> 11.sp
+                item.name.length > 20 -> 12.5.sp
+                else -> 14.sp
+            }
             BasicTextField(
                 value = item.name,
                 onValueChange = onNameChange,
                 textStyle = TextStyle(
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontSize = nameFontSize,
+                    fontWeight = FontWeight.Bold,
                     color = Color.Black
                 ),
                 cursorBrush = SolidColor(DarkForestGreen),
-                singleLine = true,
+                singleLine = false,
+                maxLines = 3,
                 modifier = Modifier.fillMaxWidth().testTag("item_name_input_$index")
             )
         }
@@ -426,7 +432,7 @@ fun MemoItemRow(
                         onValueChange = onQtyChange,
                         textStyle = TextStyle(
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = FontWeight.Bold,
                             color = Color.Black,
                             textAlign = TextAlign.Center
                         ),
@@ -495,7 +501,7 @@ fun MemoItemRow(
                 ),
                 textStyle = TextStyle(
                     fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Bold,
                     color = Color.Black,
                     textAlign = TextAlign.Center
                 ),
@@ -535,7 +541,7 @@ fun MemoItemRow(
                 textStyle = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = ForestGreenText,
+                    color = Color.Black,
                     textAlign = TextAlign.End
                 ),
                 cursorBrush = SolidColor(DarkForestGreen),

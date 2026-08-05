@@ -37,6 +37,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -173,11 +175,7 @@ fun QuickPresetChips(
                             onClick = {
                                 // Keep dropdown open so user can click multiple items into memo
                                 if (!isAdded) {
-                                    if (preset.defaultQty.isBlank()) {
-                                        promptPreset = preset
-                                    } else {
-                                        onPresetClick(preset.name, preset.defaultQty, preset.defaultRate, preset.defaultAmount)
-                                    }
+                                    onPresetClick(preset.name, preset.defaultQty, preset.defaultRate, preset.defaultAmount)
                                 }
                             }
                         )
@@ -354,6 +352,12 @@ fun ManageQuickPresetsDialog(
                     value = newItemName,
                     onValueChange = { newItemName = it },
                     label = { Text("আইটেমের নাম (যেমন: পেঁয়াজ, সয়াবিন তেল)", fontSize = 12.sp) },
+                    textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedBorderColor = DarkForestGreen
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("custom_preset_name_input"),
@@ -417,6 +421,12 @@ fun ManageQuickPresetsDialog(
                             }
                         },
                         label = { Text("পরিমাণ", fontSize = 10.sp) },
+                        textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedBorderColor = DarkForestGreen
+                        ),
                         modifier = Modifier
                             .weight(1f)
                             .testTag("custom_preset_qty_input"),
@@ -434,6 +444,12 @@ fun ManageQuickPresetsDialog(
                             }
                         },
                         label = { Text("দর (টাকা)", fontSize = 10.sp) },
+                        textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedBorderColor = DarkForestGreen
+                        ),
                         modifier = Modifier
                             .weight(1f)
                             .testTag("custom_preset_rate_input"),
@@ -451,6 +467,12 @@ fun ManageQuickPresetsDialog(
                             }
                         },
                         label = { Text("মোট টাকা", fontSize = 10.sp) },
+                        textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedBorderColor = DarkForestGreen
+                        ),
                         modifier = Modifier
                             .weight(1f)
                             .testTag("custom_preset_amount_input"),
@@ -808,6 +830,12 @@ fun PromptQuantityDialog(
                         },
                         label = { Text("পরিমাণ (১,২)", fontSize = 10.sp) },
                         singleLine = true,
+                        textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedBorderColor = DarkForestGreen
+                        ),
                         modifier = Modifier
                             .weight(1f)
                             .testTag("prompt_qty_input")
@@ -826,6 +854,12 @@ fun PromptQuantityDialog(
                         },
                         label = { Text("দর (টাকা)", fontSize = 10.sp) },
                         singleLine = true,
+                        textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedBorderColor = DarkForestGreen
+                        ),
                         modifier = Modifier
                             .weight(1f)
                             .testTag("prompt_rate_input")
@@ -844,6 +878,12 @@ fun PromptQuantityDialog(
                         },
                         label = { Text("মোট টাকা", fontSize = 10.sp) },
                         singleLine = true,
+                        textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedBorderColor = DarkForestGreen
+                        ),
                         modifier = Modifier
                             .weight(1f)
                             .testTag("prompt_amount_input")

@@ -364,10 +364,22 @@ private fun SingleMemoVoucherCard(
                             )
                             Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(memoThemeBorder))
 
+                            val rawName = item?.name ?: ""
+                            val dynamicFontSize = when {
+                                rawName.length > 35 -> (itemTextSize.value - 2.5f).sp
+                                rawName.length > 20 -> (itemTextSize.value - 1.5f).sp
+                                else -> itemTextSize
+                            }
                             Text(
-                                text = item?.name ?: "",
-                                modifier = Modifier.weight(2.5f).padding(start = 4.dp),
-                                style = TextStyle(fontSize = itemTextSize, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810))
+                                text = rawName,
+                                modifier = Modifier.weight(2.5f).padding(horizontal = 4.dp),
+                                style = TextStyle(
+                                    fontSize = dynamicFontSize,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF2C1810),
+                                    lineHeight = (dynamicFontSize.value * 1.2f).sp
+                                ),
+                                softWrap = true
                             )
                             Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(memoThemeBorder))
 

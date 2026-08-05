@@ -377,7 +377,14 @@ object PrintUtils {
                 val item = validItems[r]
                 // Name
                 itemBoldPaint.textAlign = Paint.Align.LEFT
+                val origTextSize = itemBoldPaint.textSize
+                if (item.name.length > 35) {
+                    itemBoldPaint.textSize = origTextSize * 0.72f
+                } else if (item.name.length > 20) {
+                    itemBoldPaint.textSize = origTextSize * 0.85f
+                }
                 canvas.drawText(item.name, tableLeft + colWidths[0] + 6f, rowY + textYOffset, itemBoldPaint)
+                itemBoldPaint.textSize = origTextSize
 
                 // Qty
                 itemTextPaint.textAlign = Paint.Align.CENTER
