@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.DarkForestGreen
 
 @Composable
 fun AppSplashScreen(
@@ -77,8 +78,8 @@ fun AppSplashScreen(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF5A0000), // Deep Maroon
-                        Color(0xFF380000)  // Darker Maroon
+                        DarkForestGreen,
+                        Color(0xFF0A1F17)
                     )
                 )
             )

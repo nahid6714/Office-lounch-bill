@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import com.example.ui.theme.BrassAccent
 import com.example.ui.theme.CreamPaperBg
 import com.example.ui.theme.DarkForestGreen
@@ -287,6 +288,9 @@ fun ManageQuickPresetsDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = CreamPaperBg,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.fillMaxWidth(0.96f),
         title = {
             Text(
                 text = "দ্রুত প্রিসেট আইটেম ব্যবস্থাপনা",
@@ -722,6 +726,9 @@ fun PromptQuantityDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = CreamPaperBg,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.fillMaxWidth(0.96f),
         title = {
             Column {
                 Text(

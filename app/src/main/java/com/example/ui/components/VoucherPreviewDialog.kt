@@ -73,14 +73,14 @@ fun VoucherPreviewDialog(
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.94f)
+                .fillMaxWidth(0.96f)
+                .fillMaxHeight(0.96f)
                 .testTag("voucher_preview_dialog"),
             shape = RoundedCornerShape(16.dp),
-            color = Color(0xFFF9F6F0)
+            color = CreamPaperBg
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(12.dp)
             ) {
                 // Dialog Header
                 Row(
