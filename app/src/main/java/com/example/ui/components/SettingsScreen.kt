@@ -24,6 +24,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.CurrentBillState
+import com.example.ui.theme.CreamPaperBg
+import com.example.ui.theme.DarkForestGreen
+import com.example.ui.theme.ForestGreenText
 
 @Composable
 fun SettingsScreen(
@@ -43,7 +46,7 @@ fun SettingsScreen(
             text = "ক্যাশ মেমো ও অ্যাপ সেটিংস",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = MaroonTextColor
+            color = ForestGreenText
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -62,7 +65,7 @@ fun SettingsScreen(
                     text = "মেমোর হেডার তথ্য পরিবর্তন করুন:",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaroonHeaderColor
+                    color = DarkForestGreen
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -73,7 +76,7 @@ fun SettingsScreen(
                     label = { Text("মেডিকেল বা প্রতিষ্ঠানের নাম") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaroonHeaderColor
+                        focusedBorderColor = DarkForestGreen
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -88,7 +91,7 @@ fun SettingsScreen(
                     label = { Text("মেমোর সাবটাইটেল / শিরোনাম") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaroonHeaderColor
+                        focusedBorderColor = DarkForestGreen
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -113,7 +116,7 @@ fun SettingsScreen(
                     text = "টেমপ্লেট রিসেট:",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaroonHeaderColor
+                    color = DarkForestGreen
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))

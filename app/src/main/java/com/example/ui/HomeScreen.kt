@@ -56,14 +56,26 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import com.example.data.FoodBillUiModel
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import com.example.ui.components.AppSplashScreen
 import com.example.ui.components.BillHistoryList
-import com.example.ui.components.CreamPaperBg
-import com.example.ui.components.MaroonHeaderColor
 import com.example.ui.components.MemoVoucherCard
 import com.example.ui.components.QuickPresetChips
 import com.example.ui.components.SettingsScreen
 import com.example.ui.components.VoucherPreviewDialog
+import com.example.ui.theme.CreamPaperBg
+import com.example.ui.theme.DarkForestGreen
+import com.example.ui.theme.ForestGreenText
+import com.example.ui.theme.HeadingFontFamily
+import com.example.ui.theme.LightForestGreen
+import com.example.ui.theme.StampBlue
+import com.example.ui.theme.StampBlueDark
 import com.example.util.PrintUtils
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import java.util.Calendar
 
@@ -80,7 +92,13 @@ fun HomeScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showPreviewDialog by remember { mutableStateOf(false) }
+    var isSplashLoading by remember { mutableStateOf(true) }
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        delay(1200)
+        isSplashLoading = false
+    }
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collectLatest { msg ->
@@ -104,28 +122,40 @@ fun HomeScreen(
         )
     }
 
-    Scaffold(
+    Crossfade(
+        targetState = isSplashLoading,
+        animationSpec = tween(600),
+        label = "splash_fade"
+    ) { loading ->
+        if (loading) {
+            AppSplashScreen(
+                appName = currentBillState.centerName.ifBlank { "আল বারাকা খাবার বিল" },
+                subtitle = currentBillState.subtitle.ifBlank { "দৈনিক মেমো ও ক্যাশ ভাউচার" }
+            )
+        } else {
+            Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = "আল বারাকা খাবার বিল",
+                        fontFamily = HeadingFontFamily,
                         fontWeight = FontWeight.Bold,
                         fontSize = 19.sp
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaroonHeaderColor,
+                    containerColor = DarkForestGreen,
                     titleContentColor = Color.White
                 )
             )
         },
         bottomBar = {
             NavigationBar(
-                containerColor = Color(0xFFF2E8DF),
-                contentColor = MaroonHeaderColor
+                containerColor = Color(0xFFEBE2D8),
+                contentColor = DarkForestGreen
             ) {
-                val darkUnselectedColor = Color(0xFF3E1F1F) // Dark maroon/charcoal for strong legibility
+                val darkUnselectedColor = Color(0xFF2C3E35)
 
                 NavigationBarItem(
                     selected = selectedTab == 0,
@@ -134,8 +164,8 @@ fun HomeScreen(
                     label = { Text("দৈনিক বিল", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color.White,
-                        selectedTextColor = MaroonHeaderColor,
-                        indicatorColor = MaroonHeaderColor,
+                        selectedTextColor = DarkForestGreen,
+                        indicatorColor = DarkForestGreen,
                         unselectedIconColor = darkUnselectedColor,
                         unselectedTextColor = darkUnselectedColor
                     ),
@@ -149,8 +179,8 @@ fun HomeScreen(
                     label = { Text("সংরক্ষিত হিসাব", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color.White,
-                        selectedTextColor = MaroonHeaderColor,
-                        indicatorColor = MaroonHeaderColor,
+                        selectedTextColor = DarkForestGreen,
+                        indicatorColor = DarkForestGreen,
                         unselectedIconColor = darkUnselectedColor,
                         unselectedTextColor = darkUnselectedColor
                     ),
@@ -164,8 +194,8 @@ fun HomeScreen(
                     label = { Text("সেটিংস", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color.White,
-                        selectedTextColor = MaroonHeaderColor,
-                        indicatorColor = MaroonHeaderColor,
+                        selectedTextColor = DarkForestGreen,
+                        indicatorColor = DarkForestGreen,
                         unselectedIconColor = darkUnselectedColor,
                         unselectedTextColor = darkUnselectedColor
                     ),
@@ -231,34 +261,48 @@ fun HomeScreen(
                                 .padding(bottom = 20.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // Print / Preview Button
-                            Button(
-                                onClick = { showPreviewDialog = true },
+                            // Print / Preview Button (Forest Green Gradient)
+                            Box(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        brush = Brush.horizontalGradient(
+                                            colors = listOf(DarkForestGreen, LightForestGreen)
+                                        )
+                                    )
+                                    .clickable { showPreviewDialog = true }
                                     .testTag("print_bill_button"),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaroonHeaderColor)
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Print, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("প্রিন্ট / প্রিভিউ", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Print, contentDescription = null, tint = Color.White)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("প্রিন্ট / প্রিভিউ", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
                             }
 
-                            // Save Button
-                            Button(
-                                onClick = { viewModel.saveCurrentBill() },
+                            // Save Button (Deep Emerald/Forest Green Gradient)
+                            Box(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        brush = Brush.horizontalGradient(
+                                            colors = listOf(Color(0xFF1B5E20), Color(0xFF2E7D32))
+                                        )
+                                    )
+                                    .clickable { viewModel.saveCurrentBill() }
                                     .testTag("save_bill_button"),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Save, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("সংরক্ষণ", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("সংরক্ষণ", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
                             }
 
                             // Clear / New Button
@@ -307,6 +351,8 @@ fun HomeScreen(
                     )
                 }
             }
+        }
+    }
         }
     }
 

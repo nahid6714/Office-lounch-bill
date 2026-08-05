@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,7 +28,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,11 +38,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -55,12 +56,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.BillItem
 import com.example.ui.CurrentBillState
+import com.example.ui.theme.BrassAccent
+import com.example.ui.theme.CreamPaperBg
+import com.example.ui.theme.DarkForestGreen
+import com.example.ui.theme.ForestGreenText
+import com.example.ui.theme.HeadingFontFamily
+import com.example.ui.theme.LedgerRed
+import com.example.ui.theme.LightForestGreen
+import com.example.ui.theme.WarmBorderColor
 import com.example.util.BengaliUtils
 
-val MaroonHeaderColor = Color(0xFF802B2B)
-val CreamPaperBg = Color(0xFFFFFDF9)
-val WarmBorderColor = Color(0xFFD3C2B2)
-val MaroonTextColor = Color(0xFF5C1F1F)
+val MaroonHeaderColor = DarkForestGreen
+val MaroonTextColor = ForestGreenText
 
 @Composable
 fun MemoVoucherCard(
@@ -85,18 +92,23 @@ fun MemoVoucherCard(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Header Banner
+            // Header Banner with Forest Green Gradient
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaroonHeaderColor)
-                    .padding(vertical = 16.dp, horizontal = 12.dp),
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(DarkForestGreen, LightForestGreen)
+                        )
+                    )
+                    .padding(vertical = 18.dp, horizontal = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = state.centerName,
                         style = TextStyle(
+                            fontFamily = HeadingFontFamily,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -109,14 +121,14 @@ fun MemoVoucherCard(
                         style = TextStyle(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Normal,
-                            color = Color.White.copy(alpha = 0.9f)
+                            color = Color.White.copy(alpha = 0.92f)
                         ),
                         textAlign = TextAlign.Center
                     )
                 }
             }
 
-            // Sawtooth / Decorative teeth line
+            // Sawtooth / Decorative teeth line with double rule
             SawtoothDivider()
 
             Column(
@@ -141,9 +153,10 @@ fun MemoVoucherCard(
                         Text(
                             text = "তারিখ:",
                             style = TextStyle(
+                                fontFamily = HeadingFontFamily,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaroonTextColor
+                                color = ForestGreenText
                             )
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -159,7 +172,7 @@ fun MemoVoucherCard(
                         Icon(
                             imageVector = Icons.Default.CalendarToday,
                             contentDescription = "তারিখ পরিবর্তন",
-                            tint = MaroonHeaderColor,
+                            tint = DarkForestGreen,
                             modifier = Modifier.padding(start = 2.dp)
                         )
                     }
@@ -172,7 +185,7 @@ fun MemoVoucherCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFF7EFE8), shape = RoundedCornerShape(4.dp))
+                        .background(Color(0xFFF0E8DF), shape = RoundedCornerShape(4.dp))
                         .padding(vertical = 8.dp, horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -180,18 +193,20 @@ fun MemoVoucherCard(
                         text = "বিবরণ",
                         modifier = Modifier.weight(2.0f),
                         style = TextStyle(
+                            fontFamily = HeadingFontFamily,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaroonTextColor
+                            color = ForestGreenText
                         )
                     )
                     Text(
                         text = "পরিমাণ",
                         modifier = Modifier.weight(1.4f),
                         style = TextStyle(
+                            fontFamily = HeadingFontFamily,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaroonTextColor,
+                            color = ForestGreenText,
                             textAlign = TextAlign.Center
                         )
                     )
@@ -199,9 +214,10 @@ fun MemoVoucherCard(
                         text = "দর",
                         modifier = Modifier.weight(0.9f),
                         style = TextStyle(
+                            fontFamily = HeadingFontFamily,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaroonTextColor,
+                            color = ForestGreenText,
                             textAlign = TextAlign.Center
                         )
                     )
@@ -209,13 +225,14 @@ fun MemoVoucherCard(
                         text = "টাকা",
                         modifier = Modifier.weight(1.1f),
                         style = TextStyle(
+                            fontFamily = HeadingFontFamily,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaroonTextColor,
+                            color = ForestGreenText,
                             textAlign = TextAlign.End
                         )
                     )
-                    Spacer(modifier = Modifier.width(32.dp)) // Reserve space for delete button
+                    Spacer(modifier = Modifier.width(32.dp))
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -231,7 +248,7 @@ fun MemoVoucherCard(
                         onAmountChange = { onUpdateItemAmount(item.id, it) },
                         onRemove = { onRemoveItem(item.id) }
                     )
-                    Divider(color = Color(0xFFF0E6DD), thickness = 0.5.dp)
+                    Divider(color = Color(0xFFECE3D8), thickness = 0.5.dp)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -246,45 +263,64 @@ fun MemoVoucherCard(
                         .testTag("add_item_button"),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaroonHeaderColor
+                        contentColor = DarkForestGreen
                     )
                 ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                    Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = DarkForestGreen)
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (canAddItem) "+ নতুন আইটেম যোগ করুন" else "সর্বোচ্চ ১৮ টি আইটেম সীমাবদ্ধ",
                         fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = DarkForestGreen
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Divider(color = MaroonHeaderColor, thickness = 2.dp)
-                Spacer(modifier = Modifier.height(12.dp))
 
-                // Total Summary Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                // Total Summary Row with Brass Dashed/Stitched Border
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .drawBehind {
+                            val stroke = Stroke(
+                                width = 1.5.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 6f), 0f)
+                            )
+                            drawRoundRect(
+                                color = BrassAccent,
+                                style = stroke,
+                                cornerRadius = CornerRadius(8.dp.toPx())
+                            )
+                        }
+                        .background(Color(0xFFFFFBF2), shape = RoundedCornerShape(8.dp))
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
                 ) {
-                    Text(
-                        text = "মোট — ",
-                        style = TextStyle(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaroonTextColor
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "মোট — ",
+                            style = TextStyle(
+                                fontFamily = HeadingFontFamily,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ForestGreenText
+                            )
                         )
-                    )
-                    Text(
-                        text = BengaliUtils.formatBengaliCurrency(state.totalAmount),
-                        style = TextStyle(
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaroonHeaderColor
-                        ),
-                        modifier = Modifier.testTag("total_amount_text")
-                    )
+                        Text(
+                            text = BengaliUtils.formatBengaliCurrency(state.totalAmount),
+                            style = TextStyle(
+                                fontFamily = HeadingFontFamily,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = DarkForestGreen
+                            ),
+                            modifier = Modifier.testTag("total_amount_text")
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -298,7 +334,7 @@ fun MemoVoucherCard(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.width(140.dp)
                     ) {
-                        Divider(color = MaroonTextColor, thickness = 1.dp)
+                        Divider(color = ForestGreenText, thickness = 1.dp)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = state.purchaserLabel,
@@ -352,7 +388,7 @@ fun MemoItemRow(
                     fontWeight = FontWeight.Medium,
                     color = Color.Black
                 ),
-                cursorBrush = SolidColor(MaroonHeaderColor),
+                cursorBrush = SolidColor(DarkForestGreen),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("item_name_input_$index")
             )
@@ -394,7 +430,7 @@ fun MemoItemRow(
                             color = Color.Black,
                             textAlign = TextAlign.Center
                         ),
-                        cursorBrush = SolidColor(MaroonHeaderColor),
+                        cursorBrush = SolidColor(DarkForestGreen),
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -406,7 +442,7 @@ fun MemoItemRow(
                 Box {
                     Surface(
                         shape = RoundedCornerShape(3.dp),
-                        color = Color(0xFFF2E6DC),
+                        color = Color(0xFFEBE2D8),
                         modifier = Modifier
                             .clickable { showUnitMenu = true }
                             .padding(horizontal = 2.dp, vertical = 2.dp)
@@ -414,7 +450,7 @@ fun MemoItemRow(
                         Text(
                             text = "▼",
                             fontSize = 8.sp,
-                            color = MaroonHeaderColor,
+                            color = DarkForestGreen,
                             modifier = Modifier.padding(2.dp)
                         )
                     }
@@ -463,7 +499,7 @@ fun MemoItemRow(
                     color = Color.Black,
                     textAlign = TextAlign.Center
                 ),
-                cursorBrush = SolidColor(MaroonHeaderColor),
+                cursorBrush = SolidColor(DarkForestGreen),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("item_rate_input_$index")
             )
@@ -499,10 +535,10 @@ fun MemoItemRow(
                 textStyle = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaroonTextColor,
+                    color = ForestGreenText,
                     textAlign = TextAlign.End
                 ),
-                cursorBrush = SolidColor(MaroonHeaderColor),
+                cursorBrush = SolidColor(DarkForestGreen),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("item_amount_input_$index")
             )
@@ -517,7 +553,7 @@ fun MemoItemRow(
             }
         }
 
-        // Delete Row Icon
+        // Delete Row Icon in LedgerRed
         IconButton(
             onClick = onRemove,
             modifier = Modifier.testTag("remove_item_button_$index")
@@ -525,7 +561,7 @@ fun MemoItemRow(
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "আইটেম মুছুন",
-                tint = Color.Gray.copy(alpha = 0.7f)
+                tint = LedgerRed
             )
         }
     }
@@ -533,28 +569,46 @@ fun MemoItemRow(
 
 @Composable
 fun SawtoothDivider() {
-    Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(8.dp)
-    ) {
-        val width = size.width
-        val toothWidth = 16f
-        val toothHeight = size.height
-        val path = Path()
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+        ) {
+            val width = size.width
+            val toothWidth = 16f
+            val toothHeight = size.height
+            val path = Path()
 
-        path.moveTo(0f, 0f)
-        var x = 0f
-        var isUp = false
-        while (x < width) {
-            x += toothWidth
-            val y = if (isUp) 0f else toothHeight
-            path.lineTo(x, y)
-            isUp = !isUp
+            path.moveTo(0f, 0f)
+            var x = 0f
+            var isUp = false
+            while (x < width) {
+                x += toothWidth
+                val y = if (isUp) 0f else toothHeight
+                path.lineTo(x, y)
+                isUp = !isUp
+            }
+            path.lineTo(width, 0f)
+            path.close()
+
+            drawPath(path = path, color = DarkForestGreen)
         }
-        path.lineTo(width, 0f)
-        path.close()
 
-        drawPath(path = path, color = MaroonHeaderColor)
+        // Double rule line (Brass Accent + Ledger Red)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.5.dp)
+                .background(BrassAccent)
+        )
+        Spacer(modifier = Modifier.height(1.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(LedgerRed)
+        )
     }
 }
+

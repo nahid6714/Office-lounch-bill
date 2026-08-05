@@ -46,6 +46,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.FoodBillUiModel
+import com.example.ui.theme.CreamPaperBg
+import com.example.ui.theme.DarkForestGreen
+import com.example.ui.theme.ForestGreenText
+import com.example.ui.theme.HeadingFontFamily
+import com.example.ui.theme.LedgerRed
+import com.example.ui.theme.StampBlue
+import com.example.ui.theme.WarmBorderColor
 import com.example.util.BengaliUtils
 
 @Composable
@@ -92,7 +99,7 @@ fun BillHistoryList(
             singleLine = true,
             shape = RoundedCornerShape(24.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaroonHeaderColor,
+                focusedBorderColor = DarkForestGreen,
                 unfocusedBorderColor = WarmBorderColor
             ),
             modifier = Modifier
@@ -108,7 +115,7 @@ fun BillHistoryList(
                 .fillMaxWidth()
                 .testTag("summary_card"),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = MaroonHeaderColor)
+            colors = CardDefaults.cardColors(containerColor = DarkForestGreen)
         ) {
             Row(
                 modifier = Modifier
@@ -230,7 +237,7 @@ fun HistoryBillItemCard(
                         text = "তারিখ: ${BengaliUtils.toBengaliDigits(bill.dateString)}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaroonTextColor
+                        color = ForestGreenText
                     )
                     if (bill.purchaserName.isNotBlank()) {
                         Text(
@@ -245,7 +252,7 @@ fun HistoryBillItemCard(
                     text = BengaliUtils.formatBengaliCurrency(bill.totalAmount),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = MaroonHeaderColor
+                    color = DarkForestGreen
                 )
             }
 
@@ -274,28 +281,28 @@ fun HistoryBillItemCard(
                     onClick = onEdit,
                     modifier = Modifier.testTag("edit_history_bill_${bill.id}")
                 ) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = "সম্পাদনা", tint = MaroonHeaderColor)
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = "সম্পাদনা", tint = DarkForestGreen)
                 }
 
                 IconButton(
                     onClick = onPrint,
                     modifier = Modifier.testTag("print_history_bill_${bill.id}")
                 ) {
-                    Icon(imageVector = Icons.Default.Print, contentDescription = "প্রিন্ট করুন", tint = MaroonHeaderColor)
+                    Icon(imageVector = Icons.Default.Print, contentDescription = "প্রিন্ট করুন", tint = DarkForestGreen)
                 }
 
                 IconButton(
                     onClick = onSharePdf,
                     modifier = Modifier.testTag("share_history_bill_${bill.id}")
                 ) {
-                    Icon(imageVector = Icons.Default.Share, contentDescription = "পিডিএফ শেয়ার করুন", tint = Color(0xFF2E7D32))
+                    Icon(imageVector = Icons.Default.Share, contentDescription = "পিডিএফ শেয়ার করুন", tint = DarkForestGreen)
                 }
 
                 IconButton(
                     onClick = onDelete,
                     modifier = Modifier.testTag("delete_history_bill_${bill.id}")
                 ) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "মুছুন", tint = Color.Red.copy(alpha = 0.7f))
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "মুছুন", tint = LedgerRed)
                 }
             }
         }

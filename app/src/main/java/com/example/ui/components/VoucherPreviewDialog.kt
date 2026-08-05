@@ -50,6 +50,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.BillItem
 import com.example.ui.CurrentBillState
+import com.example.ui.theme.CreamPaperBg
+import com.example.ui.theme.DarkForestGreen
+import com.example.ui.theme.ForestGreenText
+import com.example.ui.theme.StampBlue
 import com.example.util.BengaliUtils
 import com.example.util.PrintPosition
 
@@ -89,7 +93,7 @@ fun VoucherPreviewDialog(
                             text = "বিল প্রিভিউ & A4 পজিশন",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaroonTextColor
+                            color = ForestGreenText
                         )
                         Text(
                             text = "A4 পেপারে প্রিন্ট/পিডিএফ পজিশন সিলেক্ট করুন:",
@@ -102,7 +106,7 @@ fun VoucherPreviewDialog(
                         onClick = onDismiss,
                         modifier = Modifier.testTag("close_preview_dialog")
                     ) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "বন্ধ করুন", tint = MaroonTextColor)
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "বন্ধ করুন", tint = ForestGreenText)
                     }
                 }
 
@@ -123,7 +127,7 @@ fun VoucherPreviewDialog(
                                 .weight(1f)
                                 .height(40.dp)
                                 .background(
-                                    if (isSelected) MaroonHeaderColor else Color.Transparent,
+                                    if (isSelected) DarkForestGreen else Color.Transparent,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .clickable { selectedPosition = pos }
@@ -134,7 +138,7 @@ fun VoucherPreviewDialog(
                                 text = pos.label,
                                 fontSize = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else MaroonTextColor,
+                                color = if (isSelected) Color.White else ForestGreenText,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -194,7 +198,7 @@ fun VoucherPreviewDialog(
                             .height(48.dp)
                             .testTag("preview_print_button"),
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaroonHeaderColor)
+                        colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen)
                     ) {
                         Icon(imageVector = Icons.Default.Print, contentDescription = null)
                         Spacer(modifier = Modifier.width(6.dp))
