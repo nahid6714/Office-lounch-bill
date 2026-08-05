@@ -212,10 +212,18 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
 
         _currentBillState.update { state ->
             val updatedItems = state.items.toMutableList()
-            if (updatedItems.any { it.name.trim() == trimmedName && it.name.isNotBlank() }) {
-                return@update state
+            val existingIndex = updatedItems.indexOfFirst { it.name.trim() == trimmedName && it.name.isNotBlank() }
+            if (existingIndex != -1) {
+                // Item already in memo -> Unselect / Remove
+                if (updatedItems.size > 1) {
+                    updatedItems.removeAt(existingIndex)
+                } else {
+                    updatedItems[0] = BillItem(id = updatedItems[0].id, name = "", quantity = "", rate = "0", amount = 0.0)
+                }
+                return@update state.copy(items = updatedItems)
             }
-            // Check if there's an empty row to fill
+
+            // Item not in memo -> Add to memo
             val emptyIndex = updatedItems.indexOfFirst { it.name.isBlank() && it.quantity.isBlank() }
             val newItem = BillItem(name = trimmedName, quantity = qty, rate = calcRate, amount = calcAmount)
             if (emptyIndex != -1) {

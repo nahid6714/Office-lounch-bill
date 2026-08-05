@@ -129,7 +129,7 @@ fun QuickPresetChips(
                         .background(CreamPaperBg)
                 ) {
                     Text(
-                        text = "— প্রিসেট লিস্ট (ট্যাপ করে মেমোতে যোগ করুন) —",
+                        text = "— প্রিসেট লিস্ট (ট্যাপ করে সিলেক্ট / আনসেলেক্ট করুন) —",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Gray,
@@ -152,31 +152,49 @@ fun QuickPresetChips(
                                         fontWeight = if (isAdded) FontWeight.Bold else FontWeight.Medium,
                                         color = if (isAdded) ForestGreenText else Color.Black
                                     )
-                                    if (preset.defaultRate.isNotBlank()) {
-                                        Text(
-                                            text = "৳${BengaliUtils.toBengaliDigits(preset.defaultRate)}",
-                                            fontSize = 12.sp,
-                                            color = BrassAccent,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (preset.defaultRate.isNotBlank()) {
+                                            Text(
+                                                text = "৳${BengaliUtils.toBengaliDigits(preset.defaultRate)}",
+                                                fontSize = 12.sp,
+                                                color = BrassAccent,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                        if (isAdded) {
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "(বাদ দিন)",
+                                                fontSize = 10.sp,
+                                                color = LedgerRed,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
                             },
                             trailingIcon = {
                                 if (isAdded) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "যোগ করা হয়েছে",
-                                        tint = DarkForestGreen,
-                                        modifier = Modifier.size(16.dp)
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "যোগ করা আছে",
+                                            tint = DarkForestGreen,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "বাদ দিন",
+                                            tint = LedgerRed,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
                                 }
                             },
                             onClick = {
-                                // Keep dropdown open so user can click multiple items into memo
-                                if (!isAdded) {
-                                    onPresetClick(preset.name, preset.defaultQty, preset.defaultRate, preset.defaultAmount)
-                                }
+                                // Toggle preset item into/out of memo
+                                onPresetClick(preset.name, preset.defaultQty, preset.defaultRate, preset.defaultAmount)
                             }
                         )
                     }
@@ -225,6 +243,24 @@ fun QuickPresetChips(
                         color = DarkForestGreen
                     )
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            contentPadding = PaddingValues(horizontal = 2.dp)
+        ) {
+            items(presets) { preset ->
+                val isAdded = addedItemNames.contains(preset.name.trim())
+                PresetChip(
+                    preset = preset,
+                    isAdded = isAdded,
+                    onClick = {
+                        onPresetClick(preset.name, preset.defaultQty, preset.defaultRate, preset.defaultAmount)
+                    }
+                )
             }
         }
     }
@@ -966,21 +1002,22 @@ fun PresetChip(
     isAdded: Boolean = false,
     onClick: () -> Unit
 ) {
-    val bgColor = if (isAdded) Color(0xFFEBE6E1) else Color(0xFFF2E6DC)
-    val textColor = if (isAdded) Color(0xFFA0948C) else ForestGreenText
-    val subTextColor = if (isAdded) Color(0xFFB5A8A0) else Color.Gray
-    val iconColor = if (isAdded) Color(0xFFA0948C) else DarkForestGreen
+    val bgColor = if (isAdded) Color(0xFFD4EDDA) else Color(0xFFF2E6DC)
+    val textColor = if (isAdded) DarkForestGreen else ForestGreenText
+    val subTextColor = if (isAdded) Color(0xFF1B5E20) else Color.Gray
+    val iconColor = if (isAdded) DarkForestGreen else DarkForestGreen
 
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = bgColor,
         shadowElevation = if (isAdded) 0.dp else 1.dp,
+        border = if (isAdded) androidx.compose.foundation.BorderStroke(1.dp, DarkForestGreen) else null,
         modifier = Modifier
-            .clickable(enabled = !isAdded) { onClick() }
+            .clickable { onClick() }
             .testTag("preset_chip_${preset.name}")
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -995,7 +1032,7 @@ fun PresetChip(
             Text(
                 text = preset.name,
                 fontSize = 13.sp,
-                fontWeight = if (isAdded) FontWeight.Normal else FontWeight.SemiBold,
+                fontWeight = if (isAdded) FontWeight.Bold else FontWeight.SemiBold,
                 color = textColor
             )
             val hasDetails = preset.defaultQty.isNotBlank() || preset.defaultRate.isNotBlank() || preset.defaultAmount.isNotBlank()
@@ -1021,6 +1058,15 @@ fun PresetChip(
                     text = "($subText)",
                     fontSize = 11.sp,
                     color = subTextColor
+                )
+            }
+            if (isAdded) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "বাদ দিন",
+                    tint = LedgerRed,
+                    modifier = Modifier.size(12.dp)
                 )
             }
         }
