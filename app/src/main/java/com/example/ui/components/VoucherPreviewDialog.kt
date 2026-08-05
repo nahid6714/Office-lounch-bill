@@ -424,7 +424,7 @@ private fun SingleMemoVoucherCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(36.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

@@ -282,7 +282,7 @@ fun ManageQuickPresetsDialog(
     var newItemQtyVal by remember { mutableStateOf("") }
     var newItemRateVal by remember { mutableStateOf("") }
     var newItemAmountVal by remember { mutableStateOf("") }
-    var selectedUnit by remember { mutableStateOf("কেজি") }
+    var selectedUnit by remember { mutableStateOf("") }
 
     val commonUnits = listOf("কেজি", "লিটার", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি", "বস্তা", "টিন")
 
@@ -536,19 +536,21 @@ fun ManageQuickPresetsDialog(
                             .weight(1f)
                             .height(42.dp)
                             .testTag("add_custom_preset_submit"),
-                        colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen),
+                        colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen, contentColor = Color.White),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Icon(
                             if (editingPreset != null) Icons.Default.Edit else Icons.Default.Add,
                             contentDescription = null,
+                            tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             if (editingPreset != null) "আইটেম আপডেট করুন" else "তালিকায় যোগ করুন",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
+                            color = Color.White
                         )
                     }
                 }
@@ -699,9 +701,9 @@ fun ManageQuickPresetsDialog(
         confirmButton = {
             Button(
                 onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen, contentColor = Color.White)
             ) {
-                Text("বন্ধ করুন")
+                Text("বন্ধ করুন", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     )
@@ -719,7 +721,7 @@ fun PromptQuantityDialog(
     var qtyVal by remember { mutableStateOf("") }
     var rateVal by remember { mutableStateOf(initialRate) }
     var amountVal by remember { mutableStateOf(initialAmount) }
-    var selectedUnit by remember { mutableStateOf("কেজি") }
+    var selectedUnit by remember { mutableStateOf("") }
 
     val commonUnits = listOf("কেজি", "লিটার", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি", "বস্তা")
     val quickQtyOptions = listOf("১", "২", "৩", "৫", "১০", "২৫০ গ্রাম", "৫০০ গ্রাম")
@@ -899,14 +901,13 @@ fun PromptQuantityDialog(
                     val finalQty = when {
                         bnQty.isNotBlank() && selectedUnit.isNotBlank() && !bnQty.contains(selectedUnit) -> "$bnQty $selectedUnit"
                         bnQty.isNotBlank() -> bnQty
-                        selectedUnit.isNotBlank() -> selectedUnit
                         else -> ""
                     }
                     onConfirm(finalQty, rateVal.trim(), amountVal.trim())
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen, contentColor = Color.White)
             ) {
-                Text("তালিকায় যোগ করুন", fontWeight = FontWeight.Bold)
+                Text("তালিকায় যোগ করুন", fontWeight = FontWeight.Bold, color = Color.White)
             }
         },
         dismissButton = {

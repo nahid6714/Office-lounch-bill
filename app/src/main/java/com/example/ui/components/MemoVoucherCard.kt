@@ -323,7 +323,7 @@ fun MemoVoucherCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(64.dp))
 
                 // Signatures Row
                 Row(
@@ -414,7 +414,7 @@ fun MemoItemRow(
                 Box(modifier = Modifier.weight(1f)) {
                     if (item.quantity.isEmpty()) {
                         Text(
-                            text = "পরিমাণ (কেজি)",
+                            text = "পরিমাণ",
                             color = Color.Gray.copy(alpha = 0.5f),
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center,
