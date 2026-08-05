@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
@@ -580,16 +581,18 @@ fun SawtoothDivider() {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp)
+                .clipToBounds()
         ) {
             val width = size.width
-            val toothWidth = 16f
+            val numTeeth = (width / 16f).toInt().coerceAtLeast(1)
+            val toothWidth = width / numTeeth
             val toothHeight = size.height
             val path = Path()
 
             path.moveTo(0f, 0f)
             var x = 0f
             var isUp = false
-            while (x < width) {
+            for (i in 0 until numTeeth) {
                 x += toothWidth
                 val y = if (isUp) 0f else toothHeight
                 path.lineTo(x, y)

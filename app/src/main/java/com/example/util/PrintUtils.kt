@@ -39,7 +39,7 @@ object PrintUtils {
         dateString: String,
         items: List<BillItem>,
         totalAmount: Double,
-        purchaserLabel: String = "ক্রয়কারীর স্বাক্ষর",
+        purchaserLabel: String = "ক্রেতার স্বাক্ষর",
         approverLabel: String = "অনুমোদনকারীর স্বাক্ষর",
         position: PrintPosition = PrintPosition.TOP
     ) {
@@ -275,8 +275,8 @@ object PrintUtils {
         }
         canvas.drawText(subtitle, 202.5f, localStartY + 42f, subtitleTextPaint)
 
-        // Sawtooth Teeth Bar
-        val toothWidth = 10f
+        // Sawtooth Teeth Bar (Contained within 10f to 395f table bounds)
+        val toothWidth = 11f
         val toothHeight = 6f
         var toothX = 10f
         val toothPaint = Paint().apply {
@@ -284,7 +284,9 @@ object PrintUtils {
             color = maroonColor
             style = Paint.Style.FILL
         }
-        while (toothX < 395f) {
+        canvas.save()
+        canvas.clipRect(10f, localStartY, 395f, localStartY + 48f + toothHeight)
+        while (toothX + toothWidth <= 395.1f) {
             val path = android.graphics.Path().apply {
                 moveTo(toothX, localStartY + 48f)
                 lineTo(toothX + toothWidth / 2, localStartY + 48f + toothHeight)
@@ -294,6 +296,7 @@ object PrintUtils {
             canvas.drawPath(path, toothPaint)
             toothX += toothWidth
         }
+        canvas.restore()
 
         // Metadata Row (Date)
         val metaPaintRight = Paint().apply {
@@ -455,8 +458,9 @@ object PrintUtils {
         val sigY = footerStartY + 20f
         val sigPaint = Paint(footerPaint).apply {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+            textAlign = Paint.Align.RIGHT
         }
-        canvas.drawText("$purchaserLabel : _______________________", 10f, sigY, sigPaint)
+        canvas.drawText("$purchaserLabel : _______________________", 395f, sigY, sigPaint)
 
         canvas.restore()
     }
