@@ -33,7 +33,7 @@ object BengaliUtils {
     fun formatBengaliCurrency(amount: Double): String {
         val df = DecimalFormat("#,##0.##")
         val formattedNumber = df.format(amount)
-        return "${toBengaliDigits(formattedNumber)} টাকা"
+        return toBengaliDigits(formattedNumber)
     }
 
     fun parseBengaliNumber(input: String): Double {

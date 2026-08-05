@@ -417,22 +417,14 @@ private fun SingleMemoVoucherCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "কথায় (টাকার পরিমাণ) : ................................................................................ টাকা মাত্র।",
-                    fontSize = 9.sp,
-                    color = Color(0xFF2C1810)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Start
                 ) {
                     Text(
-                        text = "(ক্রেতার স্বাক্ষর : _______________________",
+                        text = "ক্রেতার স্বাক্ষর : _______________________",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2C1810)

@@ -440,10 +440,8 @@ object PrintUtils {
             textSize = 11f
         }
 
-        canvas.drawText("কথায় (টাকার পরিমাণ) : .................................................................... টাকা মাত্র।", 10f, footerStartY + 12f, footerPaint)
-
         // Signature Row (Only Purchaser Signature, No Brackets, No Approver Signature)
-        val sigY = footerStartY + 42f
+        val sigY = footerStartY + 25f
         val sigPaint = Paint(footerPaint).apply {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
         }
@@ -555,9 +553,6 @@ object PrintUtils {
                     </div>
 
                     <div class="footer-section">
-                        <div class="words-row">
-                            কথায় (টাকার পরিমাণ) : .......................................................................................... টাকা মাত্র।
-                        </div>
                         <div class="signatures-row">
                             <div class="sig-box">
                                 $purchaserLabel : <span class="sig-line"></span>
