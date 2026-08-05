@@ -174,6 +174,10 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
 
     fun addItemRow() {
         _currentBillState.update { state ->
+            if (state.items.size >= 18) {
+                viewModelScope.launch { _uiEvent.emit("সর্বোচ্চ ১৮ টি আইটেম যোগ করা সম্ভব") }
+                return@update state
+            }
             val updatedItems = state.items.toMutableList()
             updatedItems.add(BillItem(name = "", quantity = "", rate = "0", amount = 0.0))
             state.copy(items = updatedItems)
@@ -201,6 +205,10 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
             if (emptyIndex != -1) {
                 updatedItems[emptyIndex] = newItem
             } else {
+                if (updatedItems.size >= 18) {
+                    viewModelScope.launch { _uiEvent.emit("সর্বোচ্চ ১৮ টি আইটেম যোগ করা সম্ভব") }
+                    return@update state
+                }
                 updatedItems.add(newItem)
             }
             state.copy(items = updatedItems)

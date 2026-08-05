@@ -289,7 +289,10 @@ private fun SingleMemoVoucherCard(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 // Table Grid
-                val totalRows = 14
+                val totalRows = maxOf(14, validItems.size.coerceAtMost(18))
+                val rowPaddingY = if (totalRows > 14) 3.5.dp else 7.5.dp
+                val dividerBoxHeight = if (totalRows > 14) 14.dp else 19.dp
+                val itemTextSize = if (totalRows > 14) 9.sp else 10.sp
                 val darkMaroonBorder = Color(0xFF5A0000)
                 Column(
                     modifier = Modifier
@@ -343,36 +346,36 @@ private fun SingleMemoVoucherCard(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 7.5.dp, horizontal = 2.dp),
+                                .padding(vertical = rowPaddingY, horizontal = 2.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = slNo,
                                 modifier = Modifier.weight(0.9f),
-                                style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
+                                style = TextStyle(fontSize = itemTextSize, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
                             )
-                            Box(modifier = Modifier.width(1.2.dp).height(19.dp).background(darkMaroonBorder))
+                            Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(darkMaroonBorder))
 
                             Text(
                                 text = item?.name ?: "",
                                 modifier = Modifier.weight(2.6f).padding(start = 4.dp),
-                                style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810))
+                                style = TextStyle(fontSize = itemTextSize, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810))
                             )
-                            Box(modifier = Modifier.width(1.2.dp).height(19.dp).background(darkMaroonBorder))
+                            Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(darkMaroonBorder))
 
                             Text(
                                 text = if (item != null) BengaliUtils.toBengaliDigits(item.quantity) else "",
                                 modifier = Modifier.weight(1.2f),
-                                style = TextStyle(fontSize = 10.sp, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
+                                style = TextStyle(fontSize = itemTextSize, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
                             )
-                            Box(modifier = Modifier.width(1.2.dp).height(19.dp).background(darkMaroonBorder))
+                            Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(darkMaroonBorder))
 
                             Text(
                                 text = if (item != null && item.rate != "0" && item.rate.isNotBlank()) BengaliUtils.toBengaliDigits(item.rate) else "",
                                 modifier = Modifier.weight(0.9f),
-                                style = TextStyle(fontSize = 10.sp, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
+                                style = TextStyle(fontSize = itemTextSize, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
                             )
-                            Box(modifier = Modifier.width(1.2.dp).height(19.dp).background(darkMaroonBorder))
+                            Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(darkMaroonBorder))
 
                             val bnAmount = if (item != null) {
                                 if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(item.amount.toInt().toString())}/-"
@@ -380,7 +383,7 @@ private fun SingleMemoVoucherCard(
                             Text(
                                 text = bnAmount,
                                 modifier = Modifier.weight(1.2f).padding(end = 4.dp),
-                                style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810), textAlign = TextAlign.End)
+                                style = TextStyle(fontSize = itemTextSize, fontWeight = FontWeight.Bold, color = Color(0xFF2C1810), textAlign = TextAlign.End)
                             )
                         }
 

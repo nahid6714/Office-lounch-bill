@@ -237,8 +237,10 @@ fun MemoVoucherCard(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // + Add Item Button
+                val canAddItem = state.items.size < 18
                 OutlinedButton(
                     onClick = onAddItemRow,
+                    enabled = canAddItem,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("add_item_button"),
@@ -250,7 +252,7 @@ fun MemoVoucherCard(
                     Icon(imageVector = Icons.Default.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "+ নতুন আইটেম যোগ করুন",
+                        text = if (canAddItem) "+ নতুন আইটেম যোগ করুন" else "সর্বোচ্চ ১৮ টি আইটেম সীমাবদ্ধ",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
