@@ -122,18 +122,22 @@ fun HomeScreen(
         },
         bottomBar = {
             NavigationBar(
-                containerColor = Color(0xFFF7EFE8),
+                containerColor = Color(0xFFF2E8DF),
                 contentColor = MaroonHeaderColor
             ) {
+                val darkUnselectedColor = Color(0xFF3E1F1F) // Dark maroon/charcoal for strong legibility
+
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     icon = { Icon(Icons.Default.Edit, contentDescription = "দৈনিক বিল") },
-                    label = { Text("দৈনিক বিল", fontWeight = FontWeight.Bold) },
+                    label = { Text("দৈনিক বিল", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaroonHeaderColor,
+                        selectedIconColor = Color.White,
                         selectedTextColor = MaroonHeaderColor,
-                        indicatorColor = Color(0xFFEAE0D5)
+                        indicatorColor = MaroonHeaderColor,
+                        unselectedIconColor = darkUnselectedColor,
+                        unselectedTextColor = darkUnselectedColor
                     ),
                     modifier = Modifier.testTag("tab_daily_bill")
                 )
@@ -142,11 +146,13 @@ fun HomeScreen(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     icon = { Icon(Icons.Default.History, contentDescription = "সংরক্ষিত হিসাব") },
-                    label = { Text("সংরক্ষিত হিসাব", fontWeight = FontWeight.Bold) },
+                    label = { Text("সংরক্ষিত হিসাব", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaroonHeaderColor,
+                        selectedIconColor = Color.White,
                         selectedTextColor = MaroonHeaderColor,
-                        indicatorColor = Color(0xFFEAE0D5)
+                        indicatorColor = MaroonHeaderColor,
+                        unselectedIconColor = darkUnselectedColor,
+                        unselectedTextColor = darkUnselectedColor
                     ),
                     modifier = Modifier.testTag("tab_saved_history")
                 )
@@ -155,11 +161,13 @@ fun HomeScreen(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
                     icon = { Icon(Icons.Default.Settings, contentDescription = "সেটিংস") },
-                    label = { Text("সেটিংস", fontWeight = FontWeight.Bold) },
+                    label = { Text("সেটিংস", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaroonHeaderColor,
+                        selectedIconColor = Color.White,
                         selectedTextColor = MaroonHeaderColor,
-                        indicatorColor = Color(0xFFEAE0D5)
+                        indicatorColor = MaroonHeaderColor,
+                        unselectedIconColor = darkUnselectedColor,
+                        unselectedTextColor = darkUnselectedColor
                     ),
                     modifier = Modifier.testTag("tab_settings")
                 )
@@ -186,11 +194,11 @@ fun HomeScreen(
                         QuickPresetChips(
                             presets = quickPresets,
                             addedItemNames = currentBillState.items.map { it.name.trim() }.filter { it.isNotBlank() }.toSet(),
-                            onPresetClick = { name, qty, rate ->
-                                viewModel.addQuickPresetItem(name, qty, rate)
+                            onPresetClick = { name, qty, rate, amount ->
+                                viewModel.addQuickPresetItem(name, qty, rate, amount)
                             },
-                            onAddCustomPreset = { name, qty, rate ->
-                                viewModel.addCustomQuickPreset(name, qty, rate)
+                            onAddCustomPreset = { name, qty, rate, amount ->
+                                viewModel.addCustomQuickPreset(name, qty, rate, amount)
                             },
                             onRemovePreset = { preset ->
                                 viewModel.removeQuickPreset(preset)

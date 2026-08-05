@@ -62,5 +62,6 @@ object BengaliUtils {
 data class QuickPreset(
     val name: String,
     val defaultQty: String = "",
-    val defaultRate: String = ""
+    val defaultRate: String = "",
+    val defaultAmount: String = ""
 )

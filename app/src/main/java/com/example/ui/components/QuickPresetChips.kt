@@ -52,8 +52,8 @@ import com.example.util.QuickPreset
 fun QuickPresetChips(
     presets: List<QuickPreset>,
     addedItemNames: Set<String> = emptySet(),
-    onPresetClick: (name: String, qty: String, rate: String) -> Unit,
-    onAddCustomPreset: (name: String, qty: String, rate: String) -> Unit,
+    onPresetClick: (name: String, qty: String, rate: String, amount: String) -> Unit,
+    onAddCustomPreset: (name: String, qty: String, rate: String, amount: String) -> Unit,
     onRemovePreset: (preset: QuickPreset) -> Unit,
     onResetDefaults: () -> Unit,
     modifier: Modifier = Modifier
@@ -131,7 +131,7 @@ fun QuickPresetChips(
                             if (preset.defaultQty.isBlank()) {
                                 promptPreset = preset
                             } else {
-                                onPresetClick(preset.name, preset.defaultQty, preset.defaultRate)
+                                onPresetClick(preset.name, preset.defaultQty, preset.defaultRate, preset.defaultAmount)
                             }
                         }
                     }
@@ -174,8 +174,8 @@ fun QuickPresetChips(
         ManageQuickPresetsDialog(
             presets = presets,
             onDismiss = { showManageDialog = false },
-            onAddPreset = { name, qty, rate ->
-                onAddCustomPreset(name, qty, rate)
+            onAddPreset = { name, qty, rate, amount ->
+                onAddCustomPreset(name, qty, rate, amount)
             },
             onRemovePreset = onRemovePreset,
             onResetDefaults = onResetDefaults
@@ -186,13 +186,25 @@ fun QuickPresetChips(
         PromptQuantityDialog(
             itemName = promptPreset!!.name,
             initialRate = promptPreset!!.defaultRate,
+            initialAmount = promptPreset!!.defaultAmount,
             onDismiss = { promptPreset = null },
-            onConfirm = { qty, rate ->
-                onPresetClick(promptPreset!!.name, qty, rate)
+            onConfirm = { qty, rate, amount ->
+                onPresetClick(promptPreset!!.name, qty, rate, amount)
                 promptPreset = null
             }
         )
     }
+}
+
+private fun extractQtyNum(str: String): Double {
+    val eng = BengaliUtils.toEnglishDigits(str)
+    val match = Regex("""\d+(\.\d+)?""").find(eng)
+    return match?.value?.toDoubleOrNull() ?: 0.0
+}
+
+private fun formatNum(value: Double): String {
+    val str = if (value % 1.0 == 0.0) value.toLong().toString() else String.format(java.util.Locale.US, "%.1f", value)
+    return BengaliUtils.toBengaliDigits(str)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -200,7 +212,7 @@ fun QuickPresetChips(
 fun ManageQuickPresetsDialog(
     presets: List<QuickPreset>,
     onDismiss: () -> Unit,
-    onAddPreset: (name: String, qty: String, rate: String) -> Unit,
+    onAddPreset: (name: String, qty: String, rate: String, amount: String) -> Unit,
     onRemovePreset: (preset: QuickPreset) -> Unit,
     onResetDefaults: () -> Unit
 ) {
@@ -208,6 +220,7 @@ fun ManageQuickPresetsDialog(
     var newItemName by remember { mutableStateOf("") }
     var newItemQtyVal by remember { mutableStateOf("") }
     var newItemRateVal by remember { mutableStateOf("") }
+    var newItemAmountVal by remember { mutableStateOf("") }
     var selectedUnit by remember { mutableStateOf("কেজি") }
 
     val commonUnits = listOf("কেজি", "লিটার", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি", "বস্তা", "টিন")
@@ -288,12 +301,22 @@ fun ManageQuickPresetsDialog(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     OutlinedTextField(
                         value = newItemQtyVal,
-                        onValueChange = { newItemQtyVal = it },
-                        label = { Text("পরিমাণ (যেমন: ১, ২)", fontSize = 11.sp) },
+                        onValueChange = { newVal ->
+                            newItemQtyVal = newVal
+                            val rateNum = BengaliUtils.parseBengaliNumber(newItemRateVal)
+                            val amtNum = BengaliUtils.parseBengaliNumber(newItemAmountVal)
+                            val qtyNum = extractQtyNum(newVal)
+                            if (rateNum > 0 && qtyNum > 0) {
+                                newItemAmountVal = formatNum(rateNum * qtyNum)
+                            } else if (amtNum > 0 && qtyNum > 0 && rateNum <= 0) {
+                                newItemRateVal = formatNum(amtNum / qtyNum)
+                            }
+                        },
+                        label = { Text("পরিমাণ (১,২)", fontSize = 10.sp) },
                         modifier = Modifier
                             .weight(1f)
                             .testTag("custom_preset_qty_input"),
@@ -302,11 +325,35 @@ fun ManageQuickPresetsDialog(
 
                     OutlinedTextField(
                         value = newItemRateVal,
-                        onValueChange = { newItemRateVal = it },
-                        label = { Text("দর (যেমন: ১২০, ৮০)", fontSize = 11.sp) },
+                        onValueChange = { newVal ->
+                            newItemRateVal = newVal
+                            val rateNum = BengaliUtils.parseBengaliNumber(newVal)
+                            val qtyNum = extractQtyNum(newItemQtyVal)
+                            if (rateNum > 0 && qtyNum > 0) {
+                                newItemAmountVal = formatNum(rateNum * qtyNum)
+                            }
+                        },
+                        label = { Text("দর (টাকা)", fontSize = 10.sp) },
                         modifier = Modifier
                             .weight(1f)
                             .testTag("custom_preset_rate_input"),
+                        singleLine = true
+                    )
+
+                    OutlinedTextField(
+                        value = newItemAmountVal,
+                        onValueChange = { newVal ->
+                            newItemAmountVal = newVal
+                            val amtNum = BengaliUtils.parseBengaliNumber(newVal)
+                            val qtyNum = extractQtyNum(newItemQtyVal)
+                            if (amtNum > 0 && qtyNum > 0) {
+                                newItemRateVal = formatNum(amtNum / qtyNum)
+                            }
+                        },
+                        label = { Text("মোট টাকা", fontSize = 10.sp) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("custom_preset_amount_input"),
                         singleLine = true
                     )
                 }
@@ -314,6 +361,7 @@ fun ManageQuickPresetsDialog(
                 // Computed final preset preview
                 val bnQty = BengaliUtils.toBengaliDigits(newItemQtyVal.trim())
                 val bnRate = BengaliUtils.toBengaliDigits(newItemRateVal.trim())
+                val bnAmount = BengaliUtils.toBengaliDigits(newItemAmountVal.trim())
                 val formattedQty = when {
                     bnQty.isNotBlank() && selectedUnit.isNotBlank() -> {
                         if (bnQty.endsWith(selectedUnit)) bnQty else "$bnQty $selectedUnit"
@@ -330,8 +378,14 @@ fun ManageQuickPresetsDialog(
                         shape = RoundedCornerShape(6.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
+                        val previewStr = buildString {
+                            append("প্রিভিউ: $newItemName")
+                            if (formattedQty.isNotBlank()) append(" ($formattedQty)")
+                            if (bnRate.isNotBlank()) append(" [দর: $bnRate ৳]")
+                            if (bnAmount.isNotBlank()) append(" [টাকা: $bnAmount ৳]")
+                        }
                         Text(
-                            text = "প্রিভিউ: $newItemName${if (formattedQty.isNotBlank()) " ($formattedQty)" else ""}${if (bnRate.isNotBlank()) " [দর: $bnRate ৳]" else ""}",
+                            text = previewStr,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaroonTextColor,
@@ -352,6 +406,7 @@ fun ManageQuickPresetsDialog(
                                 newItemName = ""
                                 newItemQtyVal = ""
                                 newItemRateVal = ""
+                                newItemAmountVal = ""
                             },
                             modifier = Modifier
                                 .weight(1f)
@@ -369,11 +424,12 @@ fun ManageQuickPresetsDialog(
                                 if (editingPreset != null && editingPreset!!.name != newItemName.trim()) {
                                     onRemovePreset(editingPreset!!)
                                 }
-                                onAddPreset(newItemName.trim(), formattedQty, newItemRateVal.trim())
+                                onAddPreset(newItemName.trim(), formattedQty, newItemRateVal.trim(), newItemAmountVal.trim())
                                 editingPreset = null
                                 newItemName = ""
                                 newItemQtyVal = ""
                                 newItemRateVal = ""
+                                newItemAmountVal = ""
                             }
                         },
                         modifier = Modifier
@@ -426,12 +482,22 @@ fun ManageQuickPresetsDialog(
                             ) {
                                 val labelText = buildString {
                                     append(preset.name)
-                                    if (preset.defaultQty.isNotBlank() || preset.defaultRate.isNotBlank()) {
+                                    val hasDetails = preset.defaultQty.isNotBlank() || preset.defaultRate.isNotBlank() || preset.defaultAmount.isNotBlank()
+                                    if (hasDetails) {
                                         append(" (")
-                                        if (preset.defaultQty.isNotBlank()) append(preset.defaultQty)
+                                        var first = true
+                                        if (preset.defaultQty.isNotBlank()) {
+                                            append(preset.defaultQty)
+                                            first = false
+                                        }
                                         if (preset.defaultRate.isNotBlank()) {
-                                            if (preset.defaultQty.isNotBlank()) append(" | ")
+                                            if (!first) append(" | ")
                                             append("দর: ${preset.defaultRate}৳")
+                                            first = false
+                                        }
+                                        if (preset.defaultAmount.isNotBlank()) {
+                                            if (!first) append(" | ")
+                                            append("টাকা: ${preset.defaultAmount}৳")
                                         }
                                         append(")")
                                     }
@@ -449,6 +515,7 @@ fun ManageQuickPresetsDialog(
                                         newItemName = preset.name
                                         newItemQtyVal = preset.defaultQty
                                         newItemRateVal = preset.defaultRate
+                                        newItemAmountVal = preset.defaultAmount
                                     },
                                     modifier = Modifier
                                         .height(22.dp)
@@ -468,6 +535,7 @@ fun ManageQuickPresetsDialog(
                                             newItemName = ""
                                             newItemQtyVal = ""
                                             newItemRateVal = ""
+                                            newItemAmountVal = ""
                                         }
                                         onRemovePreset(preset)
                                     },
@@ -527,11 +595,13 @@ fun ManageQuickPresetsDialog(
 fun PromptQuantityDialog(
     itemName: String,
     initialRate: String = "",
+    initialAmount: String = "",
     onDismiss: () -> Unit,
-    onConfirm: (qty: String, rate: String) -> Unit
+    onConfirm: (qty: String, rate: String, amount: String) -> Unit
 ) {
     var qtyVal by remember { mutableStateOf("") }
     var rateVal by remember { mutableStateOf(initialRate) }
+    var amountVal by remember { mutableStateOf(initialAmount) }
     var selectedUnit by remember { mutableStateOf("কেজি") }
 
     val commonUnits = listOf("কেজি", "লিটার", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি", "বস্তা")
@@ -542,13 +612,13 @@ fun PromptQuantityDialog(
         title = {
             Column {
                 Text(
-                    text = "‘$itemName’ এর পরিমাণ ও দর লিখুন",
+                    text = "‘$itemName’ এর পরিমাণ, দর বা টাকা লিখুন",
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp,
                     color = MaroonHeaderColor
                 )
                 Text(
-                    text = "কত কেজি/লিটার/পিস এবং দর কত করে?",
+                    text = "পরিমাণ (কেজি/লিটার/পিস), দর অথবা মোট টাকা লিখুন:",
                     fontSize = 12.sp,
                     color = Color.DarkGray
                 )
@@ -597,13 +667,23 @@ fun PromptQuantityDialog(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     // Quantity Input
                     OutlinedTextField(
                         value = qtyVal,
-                        onValueChange = { qtyVal = it },
-                        label = { Text("পরিমাণ (যেমন: ১.৫, ২)", fontSize = 11.sp) },
+                        onValueChange = { newVal ->
+                            qtyVal = newVal
+                            val rateNum = BengaliUtils.parseBengaliNumber(rateVal)
+                            val amtNum = BengaliUtils.parseBengaliNumber(amountVal)
+                            val qtyNum = extractQtyNum(newVal)
+                            if (rateNum > 0 && qtyNum > 0) {
+                                amountVal = formatNum(rateNum * qtyNum)
+                            } else if (amtNum > 0 && qtyNum > 0 && rateNum <= 0) {
+                                rateVal = formatNum(amtNum / qtyNum)
+                            }
+                        },
+                        label = { Text("পরিমাণ (১,২)", fontSize = 10.sp) },
                         singleLine = true,
                         modifier = Modifier
                             .weight(1f)
@@ -613,12 +693,37 @@ fun PromptQuantityDialog(
                     // Rate Input
                     OutlinedTextField(
                         value = rateVal,
-                        onValueChange = { rateVal = it },
-                        label = { Text("দর (টাকা - যেমন: ১২০)", fontSize = 11.sp) },
+                        onValueChange = { newVal ->
+                            rateVal = newVal
+                            val rateNum = BengaliUtils.parseBengaliNumber(newVal)
+                            val qtyNum = extractQtyNum(qtyVal)
+                            if (rateNum > 0 && qtyNum > 0) {
+                                amountVal = formatNum(rateNum * qtyNum)
+                            }
+                        },
+                        label = { Text("দর (টাকা)", fontSize = 10.sp) },
                         singleLine = true,
                         modifier = Modifier
                             .weight(1f)
                             .testTag("prompt_rate_input")
+                    )
+
+                    // Total Amount Input
+                    OutlinedTextField(
+                        value = amountVal,
+                        onValueChange = { newVal ->
+                            amountVal = newVal
+                            val amtNum = BengaliUtils.parseBengaliNumber(newVal)
+                            val qtyNum = extractQtyNum(qtyVal)
+                            if (amtNum > 0 && qtyNum > 0) {
+                                rateVal = formatNum(amtNum / qtyNum)
+                            }
+                        },
+                        label = { Text("মোট টাকা", fontSize = 10.sp) },
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("prompt_amount_input")
                     )
                 }
 
@@ -644,6 +749,14 @@ fun PromptQuantityDialog(
                             color = Color(0xFFF0E4D8),
                             modifier = Modifier.clickable {
                                 qtyVal = optionText
+                                val rateNum = BengaliUtils.parseBengaliNumber(rateVal)
+                                val amtNum = BengaliUtils.parseBengaliNumber(amountVal)
+                                val qtyNum = extractQtyNum(optionText)
+                                if (rateNum > 0 && qtyNum > 0) {
+                                    amountVal = formatNum(rateNum * qtyNum)
+                                } else if (amtNum > 0 && qtyNum > 0 && rateNum <= 0) {
+                                    rateVal = formatNum(amtNum / qtyNum)
+                                }
                             }
                         ) {
                             Text(
@@ -668,7 +781,7 @@ fun PromptQuantityDialog(
                         selectedUnit.isNotBlank() -> selectedUnit
                         else -> ""
                     }
-                    onConfirm(finalQty, rateVal.trim())
+                    onConfirm(finalQty, rateVal.trim(), amountVal.trim())
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = MaroonHeaderColor)
             ) {
@@ -677,7 +790,7 @@ fun PromptQuantityDialog(
         },
         dismissButton = {
             TextButton(
-                onClick = { onConfirm("", rateVal.trim()) }
+                onClick = { onConfirm("", rateVal.trim(), amountVal.trim()) }
             ) {
                 Text("পরিমাণ ছাড়া যোগ", color = Color.Gray)
             }
@@ -723,13 +836,23 @@ fun PresetChip(
                 fontWeight = if (isAdded) FontWeight.Normal else FontWeight.SemiBold,
                 color = textColor
             )
-            if (preset.defaultQty.isNotBlank() || preset.defaultRate.isNotBlank()) {
+            val hasDetails = preset.defaultQty.isNotBlank() || preset.defaultRate.isNotBlank() || preset.defaultAmount.isNotBlank()
+            if (hasDetails) {
                 Spacer(modifier = Modifier.width(4.dp))
                 val subText = buildString {
-                    if (preset.defaultQty.isNotBlank()) append(preset.defaultQty)
+                    var first = true
+                    if (preset.defaultQty.isNotBlank()) {
+                        append(preset.defaultQty)
+                        first = false
+                    }
                     if (preset.defaultRate.isNotBlank()) {
-                        if (preset.defaultQty.isNotBlank()) append(" - ")
-                        append("${preset.defaultRate}৳")
+                        if (!first) append(" | ")
+                        append("দর: ${preset.defaultRate}৳")
+                        first = false
+                    }
+                    if (preset.defaultAmount.isNotBlank()) {
+                        if (!first) append(" | ")
+                        append("টাকা: ${preset.defaultAmount}৳")
                     }
                 }
                 Text(
