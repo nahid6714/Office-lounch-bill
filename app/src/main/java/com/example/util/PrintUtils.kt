@@ -202,13 +202,6 @@ object PrintUtils {
                     purchaserLabel = purchaserLabel,
                     approverLabel = approverLabel
                 )
-                val dividerPaint = Paint().apply {
-                    color = Color.parseColor("#28684F")
-                    strokeWidth = 1f
-                    pathEffect = android.graphics.DashPathEffect(floatArrayOf(6f, 4f), 0f)
-                }
-                canvas.drawLine(15f, 421f, 580f, 421f, dividerPaint)
-
                 drawSingleVoucherOnCanvas(
                     canvas = canvas,
                     startY = 421f,
@@ -338,10 +331,10 @@ object PrintUtils {
         // Table Rows (Default 14 rows, dynamic height up to 18 rows)
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
         val totalRows = maxOf(14, validItems.size.coerceAtMost(18))
-        val totalGridHeight = 350f
+        val totalGridHeight = 415f
         val rowHeight = totalGridHeight / totalRows
         val itemFontSize = if (totalRows > 14) 9.5f else 11f
-        val textYOffset = if (totalRows > 14) (rowHeight * 0.75f) else 17f
+        val textYOffset = if (totalRows > 14) (rowHeight * 0.75f) else (rowHeight * 0.65f)
 
         val gridBorderPaint = Paint().apply {
             isAntiAlias = true
@@ -455,12 +448,12 @@ object PrintUtils {
         }
 
         // Signature Row
-        val sigY = footerStartY + 20f
+        val sigY = footerStartY + 16f
         val sigPaint = Paint(footerPaint).apply {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
-            textAlign = Paint.Align.RIGHT
+            textAlign = Paint.Align.LEFT
         }
-        canvas.drawText("$purchaserLabel : _______________________", 395f, sigY, sigPaint)
+        canvas.drawText("$purchaserLabel : _______________________", tableLeft, sigY, sigPaint)
 
         canvas.restore()
     }
