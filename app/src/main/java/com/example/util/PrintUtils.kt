@@ -240,13 +240,13 @@ object PrintUtils {
 
         val localStartY = 0f
 
-        // Header Banner (Width = 400f, fits within half-page height 421f)
+        // Header Banner (Width = 380f, fits within half-page height 421f)
         val headerPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
             style = Paint.Style.FILL
         }
-        val headerRect = RectF(10f, localStartY, 410f, localStartY + 54f)
+        val headerRect = RectF(10f, localStartY, 390f, localStartY + 54f)
         canvas.drawRect(headerRect, headerPaint)
 
         // Title
@@ -257,7 +257,7 @@ object PrintUtils {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(centerName, 210f, localStartY + 30f, titleTextPaint)
+        canvas.drawText(centerName, 200f, localStartY + 30f, titleTextPaint)
 
         // Subtitle
         val subtitleTextPaint = Paint().apply {
@@ -266,9 +266,9 @@ object PrintUtils {
             textSize = 12f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(subtitle, 210f, localStartY + 48f, subtitleTextPaint)
+        canvas.drawText(subtitle, 200f, localStartY + 48f, subtitleTextPaint)
 
-        // Sawtooth Teeth Bar (Contained within 10f to 410f table bounds)
+        // Sawtooth Teeth Bar (Contained within 10f to 390f table bounds)
         val toothWidth = 11f
         val toothHeight = 6f
         var toothX = 10f
@@ -278,8 +278,8 @@ object PrintUtils {
             style = Paint.Style.FILL
         }
         canvas.save()
-        canvas.clipRect(10f, localStartY, 410f, localStartY + 54f + toothHeight)
-        while (toothX + toothWidth <= 410.1f) {
+        canvas.clipRect(10f, localStartY, 390f, localStartY + 54f + toothHeight)
+        while (toothX + toothWidth <= 390.1f) {
             val path = android.graphics.Path().apply {
                 moveTo(toothX, localStartY + 54f)
                 lineTo(toothX + toothWidth / 2, localStartY + 54f + toothHeight)
@@ -300,13 +300,13 @@ object PrintUtils {
             textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("তারিখ : $bnDate", 410f, localStartY + 84f, metaPaintRight)
+        canvas.drawText("তারিখ : $bnDate", 390f, localStartY + 84f, metaPaintRight)
 
-        // TABLE GRID CONFIG (Total width = 400f)
+        // TABLE GRID CONFIG (Total width = 380f)
         val tableLeft = 10f
-        val tableRight = 410f
+        val tableRight = 390f
         val tableTop = localStartY + 95f
-        val colWidths = floatArrayOf(45f, 168f, 62f, 48f, 77f) // Total width = 400f
+        val colWidths = floatArrayOf(45f, 155f, 60f, 48f, 72f) // Total width = 380f
 
         // Table Header Background
         val tableHeaderRect = RectF(tableLeft, tableTop, tableRight, tableTop + 26f)
@@ -447,18 +447,16 @@ object PrintUtils {
             textSize = 11f
         }
 
-        // Signature Row (Line on top, Label text underneath aligned to the right)
+        // Signature Row (Line on top, Label text underneath)
         val sigLineY = footerStartY + 18f
         val sigLineWidth = 140f
-        val sigLineRight = tableRight
-        val sigLineLeft = sigLineRight - sigLineWidth
 
         val linePaint = Paint().apply {
             isAntiAlias = true
             color = Color.parseColor("#1A0D08")
             strokeWidth = 1f
         }
-        canvas.drawLine(sigLineLeft, sigLineY, sigLineRight, sigLineY, linePaint)
+        canvas.drawLine(tableLeft, sigLineY, tableLeft + sigLineWidth, sigLineY, linePaint)
 
         val sigTextY = sigLineY + 14f
         val sigPaint = Paint(footerPaint).apply {
@@ -467,7 +465,7 @@ object PrintUtils {
             textSize = 11f
         }
         val labelText = purchaserLabel.ifBlank { "ক্রয়কারীর স্বাক্ষর" }
-        canvas.drawText(labelText, sigLineLeft + (sigLineWidth / 2f), sigTextY, sigPaint)
+        canvas.drawText(labelText, tableLeft + (sigLineWidth / 2f), sigTextY, sigPaint)
 
         canvas.restore()
     }
@@ -682,17 +680,17 @@ object PrintUtils {
                         display: flex;
                         justify-content: flex-end;
                         align-items: center;
-                        padding: 4px 10px;
+                        padding: 4px 16px;
                         font-size: 12px;
                         font-weight: bold;
                         color: #123528;
                     }
                     .dashed-divider {
                         border-bottom: 1.2px dashed #123528;
-                        margin: 0 10px 8px 10px;
+                        margin: 0 16px 8px 16px;
                     }
                     .table-wrapper {
-                        padding: 0 10px;
+                        padding: 0 16px;
                     }
                     .memo-table {
                         width: 100%;
@@ -750,7 +748,7 @@ object PrintUtils {
                         font-weight: bold;
                     }
                     .footer-section {
-                        padding: 10px 10px 0 10px;
+                        padding: 10px 16px 0 16px;
                         font-size: 11px;
                         color: #2C1810;
                     }
@@ -760,7 +758,7 @@ object PrintUtils {
                     }
                     .signatures-row {
                         display: flex;
-                        justify-content: flex-end;
+                        justify-content: space-between;
                         align-items: flex-end;
                         margin-top: 12px;
                     }
