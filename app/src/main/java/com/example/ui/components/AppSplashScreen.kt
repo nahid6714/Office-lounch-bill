@@ -41,8 +41,8 @@ import com.example.ui.theme.DarkForestGreen
 
 @Composable
 fun AppSplashScreen(
-    appName: String = "আল বারাকা খাবার বিল",
-    subtitle: String = "দৈনিক মেমো ও ক্যাশ ভাউচার"
+    appName: String = "টুলস",
+    subtitle: String = "স্মার্ট ডিজিটাল টুলস সংগ্রহ"
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val scale by infiniteTransition.animateFloat(

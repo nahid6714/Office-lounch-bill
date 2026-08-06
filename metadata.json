@@ -1,6 +1,6 @@
 {
-  "name": "আল বারাকা খাবার বিল",
-  "description": "আল বারাকা মেডিকেল সেন্টারের দৈনিক খাবার বাজার বিল তৈরি, সংরক্ষণ ও সরাসরি প্রিন্ট করার অ্যাপ",
+  "name": "টুলস",
+  "description": "বিভিন্ন দৈনন্দিন ও ব্যবসায়িক ডিজিটাল টুলস হাব - খাবার বিল মেমো, হিসাব সংরক্ষণ ইত্যাদি",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
