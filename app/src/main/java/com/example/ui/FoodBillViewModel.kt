@@ -228,11 +228,6 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
 
         val calcRate = when {
             rate.isNotBlank() && rate != "0" -> rate
-            amountVal > 0 && qtyVal > 0 -> {
-                val r = amountVal / qtyVal
-                val str = if (r % 1.0 == 0.0) r.toLong().toString() else String.format(Locale.US, "%.1f", r)
-                BengaliUtils.toBengaliDigits(str)
-            }
             else -> "0"
         }
 

@@ -468,12 +468,10 @@ fun ManageQuickPresetsDialog(
                             val bnVal = BengaliUtils.toBengaliDigits(newVal)
                             newItemQtyVal = bnVal
                             val rateNum = BengaliUtils.parseBengaliNumber(newItemRateVal)
-                            val amtNum = BengaliUtils.parseBengaliNumber(newItemAmountVal)
-                            val qtyNum = extractQtyNum(bnVal)
-                            if (rateNum > 0 && qtyNum > 0) {
-                                newItemAmountVal = formatNum(rateNum * qtyNum)
-                            } else if (amtNum > 0 && qtyNum > 0 && rateNum <= 0) {
-                                newItemRateVal = formatNum(amtNum / qtyNum)
+                            if (rateNum > 0) {
+                                val qtyNum = extractQtyNum(bnVal)
+                                val effectiveQty = if (qtyNum > 0) qtyNum else 1.0
+                                newItemAmountVal = formatNum(rateNum * effectiveQty)
                             }
                         },
                         label = { Text("পরিমাণ", fontSize = 10.sp) },
@@ -498,9 +496,10 @@ fun ManageQuickPresetsDialog(
                             val bnVal = BengaliUtils.toBengaliDigits(newVal)
                             newItemRateVal = bnVal
                             val rateNum = BengaliUtils.parseBengaliNumber(bnVal)
-                            val qtyNum = extractQtyNum(newItemQtyVal)
-                            if (rateNum > 0 && qtyNum > 0) {
-                                newItemAmountVal = formatNum(rateNum * qtyNum)
+                            if (rateNum > 0) {
+                                val qtyNum = extractQtyNum(newItemQtyVal)
+                                val effectiveQty = if (qtyNum > 0) qtyNum else 1.0
+                                newItemAmountVal = formatNum(rateNum * effectiveQty)
                             }
                         },
                         label = { Text("দর (টাকা)", fontSize = 10.sp) },
@@ -524,11 +523,6 @@ fun ManageQuickPresetsDialog(
                         onValueChange = { newVal ->
                             val bnVal = BengaliUtils.toBengaliDigits(newVal)
                             newItemAmountVal = bnVal
-                            val amtNum = BengaliUtils.parseBengaliNumber(bnVal)
-                            val qtyNum = extractQtyNum(newItemQtyVal)
-                            if (amtNum > 0 && qtyNum > 0) {
-                                newItemRateVal = formatNum(amtNum / qtyNum)
-                            }
                         },
                         label = { Text("মোট টাকা", fontSize = 10.sp) },
                         textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 13.sp),
@@ -895,12 +889,10 @@ fun PromptQuantityDialog(
                             val bnVal = BengaliUtils.toBengaliDigits(newVal)
                             qtyVal = bnVal
                             val rateNum = BengaliUtils.parseBengaliNumber(rateVal)
-                            val amtNum = BengaliUtils.parseBengaliNumber(amountVal)
-                            val qtyNum = extractQtyNum(bnVal)
-                            if (rateNum > 0 && qtyNum > 0) {
-                                amountVal = formatNum(rateNum * qtyNum)
-                            } else if (amtNum > 0 && qtyNum > 0 && rateNum <= 0) {
-                                rateVal = formatNum(amtNum / qtyNum)
+                            if (rateNum > 0) {
+                                val qtyNum = extractQtyNum(bnVal)
+                                val effectiveQty = if (qtyNum > 0) qtyNum else 1.0
+                                amountVal = formatNum(rateNum * effectiveQty)
                             }
                         },
                         label = { Text("পরিমাণ (১,২)", fontSize = 10.sp) },
@@ -926,9 +918,10 @@ fun PromptQuantityDialog(
                             val bnVal = BengaliUtils.toBengaliDigits(newVal)
                             rateVal = bnVal
                             val rateNum = BengaliUtils.parseBengaliNumber(bnVal)
-                            val qtyNum = extractQtyNum(qtyVal)
-                            if (rateNum > 0 && qtyNum > 0) {
-                                amountVal = formatNum(rateNum * qtyNum)
+                            if (rateNum > 0) {
+                                val qtyNum = extractQtyNum(qtyVal)
+                                val effectiveQty = if (qtyNum > 0) qtyNum else 1.0
+                                amountVal = formatNum(rateNum * effectiveQty)
                             }
                         },
                         label = { Text("দর (টাকা)", fontSize = 10.sp) },
@@ -953,11 +946,6 @@ fun PromptQuantityDialog(
                         onValueChange = { newVal ->
                             val bnVal = BengaliUtils.toBengaliDigits(newVal)
                             amountVal = bnVal
-                            val amtNum = BengaliUtils.parseBengaliNumber(bnVal)
-                            val qtyNum = extractQtyNum(qtyVal)
-                            if (amtNum > 0 && qtyNum > 0) {
-                                rateVal = formatNum(amtNum / qtyNum)
-                            }
                         },
                         label = { Text("মোট টাকা", fontSize = 10.sp) },
                         singleLine = true,
@@ -999,12 +987,10 @@ fun PromptQuantityDialog(
                             modifier = Modifier.clickable {
                                 qtyVal = optionText
                                 val rateNum = BengaliUtils.parseBengaliNumber(rateVal)
-                                val amtNum = BengaliUtils.parseBengaliNumber(amountVal)
-                                val qtyNum = extractQtyNum(optionText)
-                                if (rateNum > 0 && qtyNum > 0) {
-                                    amountVal = formatNum(rateNum * qtyNum)
-                                } else if (amtNum > 0 && qtyNum > 0 && rateNum <= 0) {
-                                    rateVal = formatNum(amtNum / qtyNum)
+                                if (rateNum > 0) {
+                                    val qtyNum = extractQtyNum(optionText)
+                                    val effectiveQty = if (qtyNum > 0) qtyNum else 1.0
+                                    amountVal = formatNum(rateNum * effectiveQty)
                                 }
                             }
                         ) {
