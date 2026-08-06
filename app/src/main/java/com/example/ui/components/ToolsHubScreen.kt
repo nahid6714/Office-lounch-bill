@@ -77,33 +77,6 @@ fun ToolsHubScreen(
             isAvailable = true,
             badgeText = "চালু আছে",
             accentColor = DarkForestGreen
-        ),
-        AppToolItem(
-            id = "cash_memo",
-            title = "সাধারণ ক্যাশ মেমো",
-            subtitle = "যেকোনো কেনাবেচার জন্য দ্রুত ডিজিটাল মেমো ও ভাউচার",
-            icon = Icons.Default.ReceiptLong,
-            isAvailable = false,
-            badgeText = "শীঘ্রই আসছে",
-            accentColor = Color(0xFF2E7D32)
-        ),
-        AppToolItem(
-            id = "calculator",
-            title = "বাজার হিসাব ক্যালকুলেটর",
-            subtitle = "সহজ কেনাকাটা ও ক্যাশ মেলাবার ডিজিটাল ক্যালকুলেটর",
-            icon = Icons.Default.Calculate,
-            isAvailable = false,
-            badgeText = "শীঘ্রই আসছে",
-            accentColor = Color(0xFF1565C0)
-        ),
-        AppToolItem(
-            id = "notes",
-            title = "ডিজিটাল নোটস ও স্মরণিকা",
-            subtitle = "দৈনন্দিন বাজার তালিকা ও কাজের খসড়া সংরক্ষণ",
-            icon = Icons.Default.EditNote,
-            isAvailable = false,
-            badgeText = "শীঘ্রই আসছে",
-            accentColor = Color(0xFF6A1B9A)
         )
     )
 

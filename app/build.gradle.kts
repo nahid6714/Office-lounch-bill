@@ -9,25 +9,40 @@ android {
     namespace = "com.example"
     compileSdk { version = release(36) { minorApiLevel = 1 } }
 
+    val envVersionCode = System.getenv("VERSION_CODE")?.toIntOrNull()
+        ?: System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
+        ?: 1
+    val envVersionName = System.getenv("VERSION_NAME") ?: "1.0.0"
+
     defaultConfig {
         applicationId = "com.example"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = envVersionCode
+        versionName = envVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
-        val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
+        val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/release.keystore"
         val keystoreFile = file(keystorePath)
         if (keystoreFile.exists()) {
             create("release") {
                 storeFile = keystoreFile
-                storePassword = System.getenv("STORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
-                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+                storePassword = System.getenv("STORE_PASSWORD") ?: "android"
+                keyAlias = System.getenv("KEY_ALIAS") ?: "key0"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
+            }
+        } else {
+            val uploadKey = file("${rootDir}/my-upload-key.jks")
+            if (uploadKey.exists()) {
+                create("release") {
+                    storeFile = uploadKey
+                    storePassword = System.getenv("STORE_PASSWORD") ?: ""
+                    keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
+                    keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+                }
             }
         }
 

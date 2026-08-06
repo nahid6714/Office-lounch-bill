@@ -69,6 +69,9 @@ import com.example.ui.components.VoucherPreviewDialog
 import com.example.ui.theme.DarkForestGreen
 import com.example.ui.theme.HeadingFontFamily
 import com.example.ui.theme.LightForestGreen
+import com.example.update.AppUpdateManager
+import com.example.update.UpdateDialog
+import com.example.update.UpdateInfo
 import com.example.util.PrintUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -86,12 +89,22 @@ fun HomeScreen(
     val quickPresets by viewModel.quickPresets.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
-    var selectedTool by remember { mutableStateOf<String?>(null) }
+    var selectedTool by remember { mutableStateOf<String?>("food_bill") }
     var selectedTab by remember { mutableIntStateOf(0) }
     var showPreviewDialog by remember { mutableStateOf(false) }
     var isSplashLoading by remember { mutableStateOf(true) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+
+    val updateManager = remember { AppUpdateManager() }
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+
+    LaunchedEffect(Unit) {
+        val info = updateManager.checkForUpdate(context)
+        if (info.hasUpdate) {
+            updateInfo = info
+        }
+    }
 
     BackHandler(enabled = selectedTool != null) {
         selectedTool = null
@@ -422,6 +435,15 @@ fun HomeScreen(
                     position = pos
                 )
             }
+        )
+    }
+
+    // In-App Update Dialog
+    updateInfo?.let { info ->
+        UpdateDialog(
+            updateInfo = info,
+            updateManager = updateManager,
+            onDismiss = { updateInfo = null }
         )
     }
 }

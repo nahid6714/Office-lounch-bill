@@ -33,7 +33,21 @@ jobs:
           base64 -d debug.keystore.base64 > debug.keystore
         fi
 
+    - name: Decode Release Keystore from Secret
+      run: |
+        if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+          echo "Release keystore decoded successfully."
+        fi
+
     - name: Build Release APK
+      env:
+        KEYSTORE_PATH: ${{ github.workspace }}/release.keystore
+        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        VERSION_CODE: ${{ github.run_number }}
+        VERSION_NAME: "1.0.${{ github.run_number }}"
       run: gradle assembleRelease --stacktrace
 
     - name: Upload Release APK Artifact
@@ -42,3 +56,19 @@ jobs:
         name: MemoApp-Release-APK
         path: app/build/outputs/apk/release/*.apk
         retention-days: 14
+
+    - name: Publish GitHub Release
+      if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')) && github.event_name == 'push'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: "v1.0.${{ github.run_number }}"
+        name: "Release v1.0.${{ github.run_number }}"
+        body: |
+          ## 🚀 New Release v1.0.${{ github.run_number }}
+          
+          **Commit:** ${{ github.sha }}
+          **Message:** ${{ github.event.head_commit.message }}
+          **Build Number:** ${{ github.run_number }}
+        files: app/build/outputs/apk/release/*.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
