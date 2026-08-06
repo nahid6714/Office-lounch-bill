@@ -325,7 +325,7 @@ fun MemoVoucherCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(64.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Signatures Row
                 Row(

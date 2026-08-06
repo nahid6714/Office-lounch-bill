@@ -331,10 +331,10 @@ object PrintUtils {
         // Table Rows (Default 14 rows, dynamic height up to 18 rows)
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
         val totalRows = maxOf(14, validItems.size.coerceAtMost(18))
-        val totalGridHeight = 415f
+        val totalGridHeight = 252f
         val rowHeight = totalGridHeight / totalRows
-        val itemFontSize = if (totalRows > 14) 9.5f else 11f
-        val textYOffset = if (totalRows > 14) (rowHeight * 0.75f) else (rowHeight * 0.65f)
+        val itemFontSize = if (totalRows > 14) 9f else 10f
+        val textYOffset = if (totalRows > 14) (rowHeight * 0.72f) else (rowHeight * 0.68f)
 
         val gridBorderPaint = Paint().apply {
             isAntiAlias = true
@@ -361,7 +361,7 @@ object PrintUtils {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
         }
 
-        var rowY = tableTop + 25f
+        var rowY = tableTop + 22f
         for (r in 0 until totalRows) {
             val slNo = BengaliUtils.toBengaliDigits(String.format("%02d", r + 1))
             
@@ -410,24 +410,24 @@ object PrintUtils {
         val totalLabelPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
-            textSize = 11.5f
+            textSize = 10.5f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
-        canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 6f, totalRowY + 17f, totalLabelPaint)
+        canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 6f, totalRowY + 13f, totalLabelPaint)
 
         // Total Value
         val totalValPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
-            textSize = 12f
+            textSize = 11f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
         val bnTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
-        canvas.drawText(bnTotal, tableRight - 6f, totalRowY + 17f, totalValPaint)
+        canvas.drawText(bnTotal, tableRight - 6f, totalRowY + 13f, totalValPaint)
 
-        val tableBottomY = totalRowY + 22f
+        val tableBottomY = totalRowY + 18f
         canvas.drawLine(tableLeft, tableBottomY, tableRight, tableBottomY, gridBorderPaint)
 
         // Outer Table Rect Border & Vertical Column Grid Lines
@@ -440,15 +440,15 @@ object PrintUtils {
         }
 
         // FOOTER BELOW TABLE
-        val footerStartY = tableBottomY + 12f
+        val footerStartY = tableBottomY + 8f
         val footerPaint = Paint().apply {
             isAntiAlias = true
             color = Color.parseColor("#1A0D08")
-            textSize = 11f
+            textSize = 10f
         }
 
         // Signature Row (Line on top, Label text underneath)
-        val sigLineY = footerStartY + 16f
+        val sigLineY = footerStartY + 14f
         val sigLineWidth = 130f
 
         val linePaint = Paint().apply {
@@ -458,11 +458,11 @@ object PrintUtils {
         }
         canvas.drawLine(tableLeft, sigLineY, tableLeft + sigLineWidth, sigLineY, linePaint)
 
-        val sigTextY = sigLineY + 14f
+        val sigTextY = sigLineY + 12f
         val sigPaint = Paint(footerPaint).apply {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
-            textSize = 10.5f
+            textSize = 10f
         }
         val labelText = purchaserLabel.ifBlank { "ক্রয়কারীর স্বাক্ষর" }
         canvas.drawText(labelText, tableLeft + (sigLineWidth / 2f), sigTextY, sigPaint)
@@ -506,9 +506,9 @@ object PrintUtils {
 
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
         val totalRowsCount = maxOf(14, validItems.size.coerceAtMost(18))
-        val rowHeightCss = if (totalRowsCount > 14) "${(350 / totalRowsCount)}px" else "25px"
-        val fontSizeCss = if (totalRowsCount > 14) "10px" else "11.5px"
-        val cellPaddingCss = if (totalRowsCount > 14) "2px 4px" else "4px 5px"
+        val rowHeightCss = if (totalRowsCount > 14) "${(210 / totalRowsCount)}px" else "15px"
+        val fontSizeCss = if (totalRowsCount > 14) "9.5px" else "10.5px"
+        val cellPaddingCss = if (totalRowsCount > 14) "1px 3px" else "2px 4px"
 
         val rowsHtml = StringBuilder()
         for (i in 0 until totalRowsCount) {
