@@ -33,7 +33,7 @@ android {
 
         val debugKeystoreFile = file("${rootDir}/debug.keystore")
         if (debugKeystoreFile.exists()) {
-            create("debugConfig") {
+            getByName("debug") {
                 storeFile = debugKeystoreFile
                 storePassword = "android"
                 keyAlias = "androiddebugkey"
@@ -53,20 +53,13 @@ android {
                 "proguard-rules.pro"
             )
 
-            val releaseConfig = signingConfigs.findByName("release")
-            if (releaseConfig != null) {
-                signingConfig = releaseConfig
-            }
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
 
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
-
-            val debugKeystoreFile = file("${rootDir}/debug.keystore")
-            if (debugKeystoreFile.exists()) {
-                signingConfig = signingConfigs.findByName("debugConfig")
-            }
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
