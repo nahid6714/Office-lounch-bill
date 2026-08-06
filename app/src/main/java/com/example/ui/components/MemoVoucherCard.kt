@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -40,6 +41,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -47,6 +50,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +88,16 @@ fun MemoVoucherCard(
     onPurchaserLabelChange: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val itemFocusRequesters = remember(state.items.size) {
+        List(state.items.size) {
+            List(4) { FocusRequester() }
+        }
+    }
+    val purchaserLabelFocusRequester = remember { FocusRequester() }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -241,9 +256,19 @@ fun MemoVoucherCard(
 
                 // Item Rows
                 state.items.forEachIndexed { index, item ->
+                    val rowRequesters = itemFocusRequesters.getOrNull(index)
+                    val nextItemRowNameRequester = itemFocusRequesters.getOrNull(index + 1)?.getOrNull(0)
+                    val nextTargetRequester = nextItemRowNameRequester
+                        ?: if (onPurchaserLabelChange != null) purchaserLabelFocusRequester else null
+
                     MemoItemRow(
                         index = index,
                         item = item,
+                        nameFocusRequester = rowRequesters?.getOrNull(0) ?: remember { FocusRequester() },
+                        qtyFocusRequester = rowRequesters?.getOrNull(1) ?: remember { FocusRequester() },
+                        rateFocusRequester = rowRequesters?.getOrNull(2) ?: remember { FocusRequester() },
+                        amountFocusRequester = rowRequesters?.getOrNull(3) ?: remember { FocusRequester() },
+                        nextTargetRequester = nextTargetRequester,
                         onNameChange = { onUpdateItemName(item.id, it) },
                         onQtyChange = { onUpdateItemQty(item.id, it) },
                         onRateChange = { onUpdateItemRate(item.id, it) },
@@ -349,8 +374,14 @@ fun MemoVoucherCard(
                                     textAlign = TextAlign.Center
                                 ),
                                 singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                }),
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .focusRequester(purchaserLabelFocusRequester)
                                     .background(Color(0x10000000), RoundedCornerShape(4.dp))
                                     .padding(vertical = 2.dp, horizontal = 4.dp)
                                     .testTag("purchaser_label_input"),
@@ -388,12 +419,20 @@ fun MemoVoucherCard(
 fun MemoItemRow(
     index: Int,
     item: BillItem,
+    nameFocusRequester: FocusRequester,
+    qtyFocusRequester: FocusRequester,
+    rateFocusRequester: FocusRequester,
+    amountFocusRequester: FocusRequester,
+    nextTargetRequester: FocusRequester?,
     onNameChange: (String) -> Unit,
     onQtyChange: (String) -> Unit,
     onRateChange: (String) -> Unit,
     onAmountChange: (String) -> Unit,
     onRemove: () -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -429,9 +468,13 @@ fun MemoItemRow(
                     color = Color.Black
                 ),
                 cursorBrush = SolidColor(DarkForestGreen),
-                singleLine = false,
-                maxLines = 3,
-                modifier = Modifier.fillMaxWidth().testTag("item_name_input_$index")
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { qtyFocusRequester.requestFocus() }),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(nameFocusRequester)
+                    .testTag("item_name_input_$index")
             )
         }
 
@@ -473,8 +516,11 @@ fun MemoItemRow(
                         ),
                         cursorBrush = SolidColor(DarkForestGreen),
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { rateFocusRequester.requestFocus() }),
                         modifier = Modifier
                             .fillMaxWidth()
+                            .focusRequester(qtyFocusRequester)
                             .testTag("item_qty_input_$index")
                     )
                 }
@@ -534,6 +580,7 @@ fun MemoItemRow(
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Next
                 ),
+                keyboardActions = KeyboardActions(onNext = { amountFocusRequester.requestFocus() }),
                 textStyle = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
@@ -542,7 +589,10 @@ fun MemoItemRow(
                 ),
                 cursorBrush = SolidColor(DarkForestGreen),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag("item_rate_input_$index")
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(rateFocusRequester)
+                    .testTag("item_rate_input_$index")
             )
             if (item.rate == "0" || item.rate.isEmpty()) {
                 Text(
@@ -571,8 +621,16 @@ fun MemoItemRow(
                 onValueChange = onAmountChange,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done
+                    imeAction = if (nextTargetRequester != null) ImeAction.Next else ImeAction.Done
                 ),
+                keyboardActions = if (nextTargetRequester != null) {
+                    KeyboardActions(onNext = { nextTargetRequester.requestFocus() })
+                } else {
+                    KeyboardActions(onDone = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    })
+                },
                 textStyle = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
@@ -581,7 +639,10 @@ fun MemoItemRow(
                 ),
                 cursorBrush = SolidColor(DarkForestGreen),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag("item_amount_input_$index")
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(amountFocusRequester)
+                    .testTag("item_amount_input_$index")
             )
             if (displayAmount.isEmpty()) {
                 Text(
