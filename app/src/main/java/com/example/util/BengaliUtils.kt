@@ -38,7 +38,16 @@ object BengaliUtils {
 
     fun parseBengaliNumber(input: String): Double {
         val engString = toEnglishDigits(input).replace(",", "").trim()
-        return engString.toDoubleOrNull() ?: 0.0
+        val direct = engString.toDoubleOrNull()
+        if (direct != null) return direct
+
+        val regex = Regex("""\d+(\.\d+)?""")
+        val match = regex.find(engString)
+        return match?.value?.toDoubleOrNull() ?: 0.0
+    }
+
+    fun parseBengaliInt(input: String): Int {
+        return parseBengaliNumber(input).toInt()
     }
 
     val defaultQuickPresets = listOf(

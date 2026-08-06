@@ -507,7 +507,7 @@ fun MemoItemRow(
                     }
                     BasicTextField(
                         value = item.quantity,
-                        onValueChange = onQtyChange,
+                        onValueChange = { onQtyChange(BengaliUtils.toBengaliDigits(it)) },
                         textStyle = TextStyle(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -573,11 +573,12 @@ fun MemoItemRow(
                 .border(0.5.dp, WarmBorderColor, RoundedCornerShape(4.dp))
                 .padding(horizontal = 4.dp, vertical = 6.dp)
         ) {
+            val displayRate = if (item.rate == "0") "" else BengaliUtils.toBengaliDigits(item.rate)
             BasicTextField(
-                value = if (item.rate == "0") "" else item.rate,
-                onValueChange = onRateChange,
+                value = displayRate,
+                onValueChange = { onRateChange(BengaliUtils.toBengaliDigits(it)) },
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
+                    keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
                 ),
                 keyboardActions = KeyboardActions(onNext = { amountFocusRequester.requestFocus() }),
@@ -608,7 +609,7 @@ fun MemoItemRow(
         Spacer(modifier = Modifier.width(4.dp))
 
         // Amount
-        val displayAmount = if (item.amount <= 0) "" else BengaliUtils.toBengaliDigits(item.amount.toInt().toString())
+        val displayAmount = if (item.amount <= 0) "" else BengaliUtils.toBengaliDigits(if (item.amount % 1.0 == 0.0) item.amount.toLong().toString() else String.format(java.util.Locale.US, "%.1f", item.amount))
         Box(
             modifier = Modifier
                 .weight(1.1f)
@@ -618,9 +619,9 @@ fun MemoItemRow(
         ) {
             BasicTextField(
                 value = displayAmount,
-                onValueChange = onAmountChange,
+                onValueChange = { onAmountChange(BengaliUtils.toBengaliDigits(it)) },
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
+                    keyboardType = KeyboardType.Text,
                     imeAction = if (nextTargetRequester != null) ImeAction.Next else ImeAction.Done
                 ),
                 keyboardActions = if (nextTargetRequester != null) {

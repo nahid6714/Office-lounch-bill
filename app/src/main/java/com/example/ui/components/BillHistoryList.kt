@@ -79,10 +79,19 @@ fun BillHistoryList(
             bills
         } else {
             val q = searchQuery.lowercase().trim()
+            val englishQ = BengaliUtils.toEnglishDigits(q)
+            val bengaliQ = BengaliUtils.toBengaliDigits(q)
             bills.filter { bill ->
-                bill.dateString.contains(q) ||
+                bill.dateString.lowercase().contains(q) ||
+                bill.dateString.lowercase().contains(englishQ) ||
+                bill.dateString.lowercase().contains(bengaliQ) ||
                 bill.purchaserName.lowercase().contains(q) ||
-                bill.items.any { item -> item.name.lowercase().contains(q) }
+                bill.items.any { item -> 
+                    item.name.lowercase().contains(q) || 
+                    item.quantity.lowercase().contains(q) ||
+                    item.quantity.lowercase().contains(englishQ) ||
+                    item.quantity.lowercase().contains(bengaliQ)
+                }
             }
         }
     }

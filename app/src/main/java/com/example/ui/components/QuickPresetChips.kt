@@ -465,10 +465,11 @@ fun ManageQuickPresetsDialog(
                     OutlinedTextField(
                         value = newItemQtyVal,
                         onValueChange = { newVal ->
-                            newItemQtyVal = newVal
+                            val bnVal = BengaliUtils.toBengaliDigits(newVal)
+                            newItemQtyVal = bnVal
                             val rateNum = BengaliUtils.parseBengaliNumber(newItemRateVal)
                             val amtNum = BengaliUtils.parseBengaliNumber(newItemAmountVal)
-                            val qtyNum = extractQtyNum(newVal)
+                            val qtyNum = extractQtyNum(bnVal)
                             if (rateNum > 0 && qtyNum > 0) {
                                 newItemAmountVal = formatNum(rateNum * qtyNum)
                             } else if (amtNum > 0 && qtyNum > 0 && rateNum <= 0) {
@@ -494,8 +495,9 @@ fun ManageQuickPresetsDialog(
                     OutlinedTextField(
                         value = newItemRateVal,
                         onValueChange = { newVal ->
-                            newItemRateVal = newVal
-                            val rateNum = BengaliUtils.parseBengaliNumber(newVal)
+                            val bnVal = BengaliUtils.toBengaliDigits(newVal)
+                            newItemRateVal = bnVal
+                            val rateNum = BengaliUtils.parseBengaliNumber(bnVal)
                             val qtyNum = extractQtyNum(newItemQtyVal)
                             if (rateNum > 0 && qtyNum > 0) {
                                 newItemAmountVal = formatNum(rateNum * qtyNum)
@@ -508,7 +510,7 @@ fun ManageQuickPresetsDialog(
                             unfocusedTextColor = Color.Black,
                             focusedBorderColor = DarkForestGreen
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { focusAmount.requestFocus() }),
                         modifier = Modifier
                             .weight(1f)
@@ -520,8 +522,9 @@ fun ManageQuickPresetsDialog(
                     OutlinedTextField(
                         value = newItemAmountVal,
                         onValueChange = { newVal ->
-                            newItemAmountVal = newVal
-                            val amtNum = BengaliUtils.parseBengaliNumber(newVal)
+                            val bnVal = BengaliUtils.toBengaliDigits(newVal)
+                            newItemAmountVal = bnVal
+                            val amtNum = BengaliUtils.parseBengaliNumber(bnVal)
                             val qtyNum = extractQtyNum(newItemQtyVal)
                             if (amtNum > 0 && qtyNum > 0) {
                                 newItemRateVal = formatNum(amtNum / qtyNum)
@@ -534,7 +537,7 @@ fun ManageQuickPresetsDialog(
                             unfocusedTextColor = Color.Black,
                             focusedBorderColor = DarkForestGreen
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = {
                             focusManager.clearFocus()
                             keyboardController?.hide()
@@ -892,10 +895,11 @@ fun PromptQuantityDialog(
                     OutlinedTextField(
                         value = qtyVal,
                         onValueChange = { newVal ->
-                            qtyVal = newVal
+                            val bnVal = BengaliUtils.toBengaliDigits(newVal)
+                            qtyVal = bnVal
                             val rateNum = BengaliUtils.parseBengaliNumber(rateVal)
                             val amtNum = BengaliUtils.parseBengaliNumber(amountVal)
-                            val qtyNum = extractQtyNum(newVal)
+                            val qtyNum = extractQtyNum(bnVal)
                             if (rateNum > 0 && qtyNum > 0) {
                                 amountVal = formatNum(rateNum * qtyNum)
                             } else if (amtNum > 0 && qtyNum > 0 && rateNum <= 0) {
@@ -922,8 +926,9 @@ fun PromptQuantityDialog(
                     OutlinedTextField(
                         value = rateVal,
                         onValueChange = { newVal ->
-                            rateVal = newVal
-                            val rateNum = BengaliUtils.parseBengaliNumber(newVal)
+                            val bnVal = BengaliUtils.toBengaliDigits(newVal)
+                            rateVal = bnVal
+                            val rateNum = BengaliUtils.parseBengaliNumber(bnVal)
                             val qtyNum = extractQtyNum(qtyVal)
                             if (rateNum > 0 && qtyNum > 0) {
                                 amountVal = formatNum(rateNum * qtyNum)
@@ -937,7 +942,7 @@ fun PromptQuantityDialog(
                             unfocusedTextColor = Color.Black,
                             focusedBorderColor = DarkForestGreen
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { focusAmount.requestFocus() }),
                         modifier = Modifier
                             .weight(1f)
@@ -949,8 +954,9 @@ fun PromptQuantityDialog(
                     OutlinedTextField(
                         value = amountVal,
                         onValueChange = { newVal ->
-                            amountVal = newVal
-                            val amtNum = BengaliUtils.parseBengaliNumber(newVal)
+                            val bnVal = BengaliUtils.toBengaliDigits(newVal)
+                            amountVal = bnVal
+                            val amtNum = BengaliUtils.parseBengaliNumber(bnVal)
                             val qtyNum = extractQtyNum(qtyVal)
                             if (amtNum > 0 && qtyNum > 0) {
                                 rateVal = formatNum(amtNum / qtyNum)
@@ -964,7 +970,7 @@ fun PromptQuantityDialog(
                             unfocusedTextColor = Color.Black,
                             focusedBorderColor = DarkForestGreen
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = {
                             focusManager.clearFocus()
                             keyboardController?.hide()
