@@ -235,40 +235,40 @@ object PrintUtils {
 
         canvas.save()
         // Rotate -90 degrees counter-clockwise with clean A4 page margins
-        canvas.translate(15f, startY + 410f)
+        canvas.translate(15f, startY + 405f)
         canvas.rotate(-90f)
 
         val localStartY = 0f
 
-        // Header Banner (Width = 385f, fits within half-page height 421f)
+        // Header Banner (Width = 380f, fits within half-page height 421f)
         val headerPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
             style = Paint.Style.FILL
         }
-        val headerRect = RectF(10f, localStartY, 395f, localStartY + 48f)
+        val headerRect = RectF(10f, localStartY, 390f, localStartY + 54f)
         canvas.drawRect(headerRect, headerPaint)
 
         // Title
         val titleTextPaint = Paint().apply {
             isAntiAlias = true
             color = Color.WHITE
-            textSize = 18f
+            textSize = 20f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(centerName, 202.5f, localStartY + 26f, titleTextPaint)
+        canvas.drawText(centerName, 200f, localStartY + 30f, titleTextPaint)
 
         // Subtitle
         val subtitleTextPaint = Paint().apply {
             isAntiAlias = true
             color = Color.WHITE
-            textSize = 11f
+            textSize = 12f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(subtitle, 202.5f, localStartY + 42f, subtitleTextPaint)
+        canvas.drawText(subtitle, 200f, localStartY + 48f, subtitleTextPaint)
 
-        // Sawtooth Teeth Bar (Contained within 10f to 395f table bounds)
+        // Sawtooth Teeth Bar (Contained within 10f to 390f table bounds)
         val toothWidth = 11f
         val toothHeight = 6f
         var toothX = 10f
@@ -278,12 +278,12 @@ object PrintUtils {
             style = Paint.Style.FILL
         }
         canvas.save()
-        canvas.clipRect(10f, localStartY, 395f, localStartY + 48f + toothHeight)
-        while (toothX + toothWidth <= 395.1f) {
+        canvas.clipRect(10f, localStartY, 390f, localStartY + 54f + toothHeight)
+        while (toothX + toothWidth <= 390.1f) {
             val path = android.graphics.Path().apply {
-                moveTo(toothX, localStartY + 48f)
-                lineTo(toothX + toothWidth / 2, localStartY + 48f + toothHeight)
-                lineTo(toothX + toothWidth, localStartY + 48f)
+                moveTo(toothX, localStartY + 54f)
+                lineTo(toothX + toothWidth / 2, localStartY + 54f + toothHeight)
+                lineTo(toothX + toothWidth, localStartY + 54f)
                 close()
             }
             canvas.drawPath(path, toothPaint)
@@ -295,28 +295,28 @@ object PrintUtils {
         val metaPaintRight = Paint().apply {
             isAntiAlias = true
             color = maroonColor
-            textSize = 11.5f
+            textSize = 12f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("তারিখ : $bnDate", 395f, localStartY + 74f, metaPaintRight)
+        canvas.drawText("তারিখ : $bnDate", 390f, localStartY + 84f, metaPaintRight)
 
-        // TABLE GRID CONFIG (Total width = 385f)
+        // TABLE GRID CONFIG (Total width = 380f)
         val tableLeft = 10f
-        val tableRight = 395f
-        val tableTop = localStartY + 82f
-        val colWidths = floatArrayOf(45f, 160f, 60f, 48f, 72f) // Total width = 385f
+        val tableRight = 390f
+        val tableTop = localStartY + 95f
+        val colWidths = floatArrayOf(45f, 155f, 60f, 48f, 72f) // Total width = 380f
 
         // Table Header Background
-        val tableHeaderRect = RectF(tableLeft, tableTop, tableRight, tableTop + 25f)
+        val tableHeaderRect = RectF(tableLeft, tableTop, tableRight, tableTop + 26f)
         canvas.drawRect(tableHeaderRect, headerPaint)
 
         // Table Header Text
         val headerTextPaint = Paint().apply {
             isAntiAlias = true
             color = Color.WHITE
-            textSize = 10.5f
+            textSize = 11f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
@@ -324,16 +324,16 @@ object PrintUtils {
         var currentX = tableLeft
         for (i in 0 until 5) {
             val colCenterX = currentX + colWidths[i] / 2
-            canvas.drawText(colTitles[i], colCenterX, tableTop + 17f, headerTextPaint)
+            canvas.drawText(colTitles[i], colCenterX, tableTop + 18f, headerTextPaint)
             currentX += colWidths[i]
         }
 
         // Table Rows (Default 14 rows, dynamic height up to 18 rows)
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
         val totalRows = maxOf(14, validItems.size.coerceAtMost(18))
-        val totalGridHeight = 252f
+        val totalGridHeight = 350f
         val rowHeight = totalGridHeight / totalRows
-        val itemFontSize = if (totalRows > 14) 9f else 10f
+        val itemFontSize = if (totalRows > 14) 10f else 11.5f
         val textYOffset = if (totalRows > 14) (rowHeight * 0.72f) else (rowHeight * 0.68f)
 
         val gridBorderPaint = Paint().apply {
@@ -361,7 +361,7 @@ object PrintUtils {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
         }
 
-        var rowY = tableTop + 22f
+        var rowY = tableTop + 26f
         for (r in 0 until totalRows) {
             val slNo = BengaliUtils.toBengaliDigits(String.format("%02d", r + 1))
             
@@ -410,24 +410,24 @@ object PrintUtils {
         val totalLabelPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
-            textSize = 10.5f
+            textSize = 11.5f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
-        canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 6f, totalRowY + 13f, totalLabelPaint)
+        canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 6f, totalRowY + 15f, totalLabelPaint)
 
         // Total Value
         val totalValPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
-            textSize = 11f
+            textSize = 12f
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
         val bnTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
-        canvas.drawText(bnTotal, tableRight - 6f, totalRowY + 13f, totalValPaint)
+        canvas.drawText(bnTotal, tableRight - 6f, totalRowY + 15f, totalValPaint)
 
-        val tableBottomY = totalRowY + 18f
+        val tableBottomY = totalRowY + 22f
         canvas.drawLine(tableLeft, tableBottomY, tableRight, tableBottomY, gridBorderPaint)
 
         // Outer Table Rect Border & Vertical Column Grid Lines
@@ -440,16 +440,16 @@ object PrintUtils {
         }
 
         // FOOTER BELOW TABLE
-        val footerStartY = tableBottomY + 8f
+        val footerStartY = tableBottomY + 12f
         val footerPaint = Paint().apply {
             isAntiAlias = true
             color = Color.parseColor("#1A0D08")
-            textSize = 10f
+            textSize = 11f
         }
 
         // Signature Row (Line on top, Label text underneath)
-        val sigLineY = footerStartY + 14f
-        val sigLineWidth = 130f
+        val sigLineY = footerStartY + 18f
+        val sigLineWidth = 140f
 
         val linePaint = Paint().apply {
             isAntiAlias = true
@@ -458,11 +458,11 @@ object PrintUtils {
         }
         canvas.drawLine(tableLeft, sigLineY, tableLeft + sigLineWidth, sigLineY, linePaint)
 
-        val sigTextY = sigLineY + 12f
+        val sigTextY = sigLineY + 14f
         val sigPaint = Paint(footerPaint).apply {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
-            textSize = 10f
+            textSize = 11f
         }
         val labelText = purchaserLabel.ifBlank { "ক্রয়কারীর স্বাক্ষর" }
         canvas.drawText(labelText, tableLeft + (sigLineWidth / 2f), sigTextY, sigPaint)
@@ -506,9 +506,9 @@ object PrintUtils {
 
         val validItems = items.filter { it.name.isNotBlank() || it.amount > 0 }
         val totalRowsCount = maxOf(14, validItems.size.coerceAtMost(18))
-        val rowHeightCss = if (totalRowsCount > 14) "${(210 / totalRowsCount)}px" else "15px"
-        val fontSizeCss = if (totalRowsCount > 14) "9.5px" else "10.5px"
-        val cellPaddingCss = if (totalRowsCount > 14) "1px 3px" else "2px 4px"
+        val rowHeightCss = if (totalRowsCount > 14) "${(350 / totalRowsCount)}px" else "25px"
+        val fontSizeCss = if (totalRowsCount > 14) "10px" else "11.5px"
+        val cellPaddingCss = if (totalRowsCount > 14) "2px 3px" else "3px 4px"
 
         val rowsHtml = StringBuilder()
         for (i in 0 until totalRowsCount) {
