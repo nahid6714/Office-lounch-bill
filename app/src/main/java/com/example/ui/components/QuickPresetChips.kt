@@ -483,7 +483,7 @@ fun ManageQuickPresetsDialog(
                             unfocusedTextColor = Color.Black,
                             focusedBorderColor = DarkForestGreen
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { focusRate.requestFocus() }),
                         modifier = Modifier
                             .weight(1f)
@@ -510,7 +510,7 @@ fun ManageQuickPresetsDialog(
                             unfocusedTextColor = Color.Black,
                             focusedBorderColor = DarkForestGreen
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { focusAmount.requestFocus() }),
                         modifier = Modifier
                             .weight(1f)
@@ -537,11 +537,8 @@ fun ManageQuickPresetsDialog(
                             unfocusedTextColor = Color.Black,
                             focusedBorderColor = DarkForestGreen
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = {
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                        }),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusName.requestFocus() }),
                         modifier = Modifier
                             .weight(1f)
                             .focusRequester(focusAmount)
@@ -914,7 +911,7 @@ fun PromptQuantityDialog(
                             unfocusedTextColor = Color.Black,
                             focusedBorderColor = DarkForestGreen
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { focusRate.requestFocus() }),
                         modifier = Modifier
                             .weight(1f)
@@ -942,7 +939,7 @@ fun PromptQuantityDialog(
                             unfocusedTextColor = Color.Black,
                             focusedBorderColor = DarkForestGreen
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { focusAmount.requestFocus() }),
                         modifier = Modifier
                             .weight(1f)
@@ -970,11 +967,8 @@ fun PromptQuantityDialog(
                             unfocusedTextColor = Color.Black,
                             focusedBorderColor = DarkForestGreen
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = {
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                        }),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusQty.requestFocus() }),
                         modifier = Modifier
                             .weight(1f)
                             .focusRequester(focusAmount)

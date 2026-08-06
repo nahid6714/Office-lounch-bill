@@ -377,7 +377,11 @@ fun HomeScreen(
                                     onCenterNameChange = { viewModel.updateCenterName(it) },
                                     onSubtitleChange = { viewModel.updateSubtitle(it) },
                                     onPurchaserLabelChange = { viewModel.updatePurchaserLabel(it) },
-                                    onResetTemplate = { viewModel.resetToInitialTemplate() }
+                                    onSaveSettings = { centerName, subtitle, purchaserLabel ->
+                                        viewModel.saveSettings(centerName, subtitle, purchaserLabel)
+                                    },
+                                    onResetTemplate = { viewModel.resetToInitialTemplate() },
+                                    onResetAllData = { viewModel.resetAllUserData() }
                                 )
                             }
                         }

@@ -67,8 +67,7 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
     private fun loadQuickPresets() {
         val jsonStr = prefs.getString("quick_presets_json", null)
         if (jsonStr.isNullOrEmpty()) {
-            _quickPresets.value = BengaliUtils.defaultQuickPresets
-            saveQuickPresetsToPrefs(BengaliUtils.defaultQuickPresets)
+            _quickPresets.value = emptyList()
         } else {
             try {
                 val array = org.json.JSONArray(jsonStr)
@@ -83,9 +82,9 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
                         list.add(QuickPreset(name, qty, rate, amount))
                     }
                 }
-                _quickPresets.value = if (list.isNotEmpty()) list else BengaliUtils.defaultQuickPresets
+                _quickPresets.value = list
             } catch (e: Exception) {
-                _quickPresets.value = BengaliUtils.defaultQuickPresets
+                _quickPresets.value = emptyList()
             }
         }
     }
@@ -134,25 +133,48 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun resetQuickPresetsToDefault() {
-        _quickPresets.value = BengaliUtils.defaultQuickPresets
-        saveQuickPresetsToPrefs(BengaliUtils.defaultQuickPresets)
-        viewModelScope.launch { _uiEvent.emit("ডিফল্ট দ্রুত তালিকা পুনরায় সেট করা হয়েছে") }
+        _quickPresets.value = emptyList()
+        saveQuickPresetsToPrefs(emptyList())
+        viewModelScope.launch { _uiEvent.emit("প্রিসেট তালিকা রিসেট করা হয়েছে") }
+    }
+
+    fun saveSettings(centerName: String, subtitle: String, purchaserLabel: String) {
+        prefs.edit()
+            .putString("saved_center_name", centerName.trim())
+            .putString("saved_subtitle", subtitle.trim())
+            .putString("saved_purchaser_label", purchaserLabel.trim())
+            .apply()
+        _currentBillState.update {
+            it.copy(
+                centerName = centerName.trim(),
+                subtitle = subtitle.trim(),
+                purchaserLabel = purchaserLabel.trim()
+            )
+        }
+        viewModelScope.launch { _uiEvent.emit("সেটিংস সফলভাবে সংরক্ষণ করা হয়েছে!") }
+    }
+
+    fun resetAllUserData() {
+        prefs.edit().clear().apply()
+        _quickPresets.value = emptyList()
+        resetToInitialTemplate()
+        viewModelScope.launch { _uiEvent.emit("সমস্ত সংরক্ষিত তথ্য রিসেট করা হয়েছে") }
     }
 
     fun resetToInitialTemplate() {
         val todayStr = dateFormat.format(Date())
+        val savedCenterName = prefs.getString("saved_center_name", "") ?: ""
+        val savedSubtitle = prefs.getString("saved_subtitle", "") ?: ""
+        val savedPurchaserLabel = prefs.getString("saved_purchaser_label", "") ?: ""
+
         _currentBillState.value = CurrentBillState(
             editingBillId = 0L,
             dateString = todayStr,
-            centerName = "আল বারাকা মেডিকেল সেন্টার",
-            subtitle = "দৈনিক খাবার বিল",
+            centerName = savedCenterName,
+            subtitle = savedSubtitle,
             purchaserName = "",
+            purchaserLabel = savedPurchaserLabel,
             items = listOf(
-                BillItem(name = "চাল", quantity = "২ কেজি", rate = "0", amount = 0.0),
-                BillItem(name = "ডাল", quantity = "২ কেজি", rate = "0", amount = 0.0),
-                BillItem(name = "লবণ", quantity = "১ প্যাকেট", rate = "0", amount = 0.0),
-                BillItem(name = "মুরগি", quantity = "২ কেজি", rate = "0", amount = 0.0),
-                BillItem(name = "", quantity = "", rate = "0", amount = 0.0),
                 BillItem(name = "", quantity = "", rate = "0", amount = 0.0)
             )
         )
@@ -330,12 +352,17 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun loadBillForEditing(bill: FoodBillUiModel) {
+        val savedCenterName = prefs.getString("saved_center_name", "") ?: ""
+        val savedSubtitle = prefs.getString("saved_subtitle", "") ?: ""
+        val savedPurchaserLabel = prefs.getString("saved_purchaser_label", "") ?: ""
+
         _currentBillState.value = CurrentBillState(
             editingBillId = bill.id,
             dateString = bill.dateString,
-            centerName = "আল বারাকা মেডিকেল সেন্টার",
-            subtitle = "দৈনিক খাবার বিল",
+            centerName = savedCenterName,
+            subtitle = savedSubtitle,
             purchaserName = bill.purchaserName,
+            purchaserLabel = savedPurchaserLabel,
             items = bill.items.ifEmpty { listOf(BillItem(name = "", quantity = "", rate = "0", amount = 0.0)) }
         )
         viewModelScope.launch {
@@ -364,11 +391,11 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
 data class CurrentBillState(
     val editingBillId: Long = 0L,
     val dateString: String = "",
-    val centerName: String = "আল বারাকা মেডিকেল সেন্টার",
-    val subtitle: String = "দৈনিক খাবার বিল",
+    val centerName: String = "",
+    val subtitle: String = "",
     val purchaserName: String = "",
-    val purchaserLabel: String = "ক্রয়কারীর স্বাক্ষর",
-    val approverLabel: String = "অনুমোদনকারীর স্বাক্ষর",
+    val purchaserLabel: String = "",
+    val approverLabel: String = "",
     val items: List<BillItem> = emptyList()
 ) {
     val totalAmount: Double

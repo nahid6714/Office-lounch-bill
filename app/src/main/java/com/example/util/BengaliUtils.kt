@@ -50,22 +50,7 @@ object BengaliUtils {
         return parseBengaliNumber(input).toInt()
     }
 
-    val defaultQuickPresets = listOf(
-        QuickPreset("চাল", "২ কেজি", "৭০"),
-        QuickPreset("ডাল", "২ কেজি", "১৩০"),
-        QuickPreset("লবণ", "১ প্যাকেট", "৪৫"),
-        QuickPreset("মুরগি", "২ কেজি", "২২০"),
-        QuickPreset("আলু", "১ কেজি", "৩০"),
-        QuickPreset("সয়াবিন তেল", "২ লিটার", "১৬৫"),
-        QuickPreset("ডিম", "১ ডজন", "১৫০"),
-        QuickPreset("মাছ", "১.৫ কেজি", "৩৫০"),
-        QuickPreset("পেঁয়াজ", "১ কেজি", "১০০"),
-        QuickPreset("রসুন ও আদা", "২৫০ গ্রাম", "১২০"),
-        QuickPreset("কাঁচা মরিচ", "২৫০ গ্রাম", "৪০"),
-        QuickPreset("লেবু", "৪ টি", "২০"),
-        QuickPreset("শাক-সবজি", "১ আঁটি", "৩০"),
-        QuickPreset("গ্যাস সিলিন্ডার", "১ টি", "১৫০০")
-    )
+    val defaultQuickPresets = emptyList<QuickPreset>()
 }
 
 data class QuickPreset(

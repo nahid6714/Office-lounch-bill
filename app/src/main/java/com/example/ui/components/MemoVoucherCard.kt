@@ -516,7 +516,7 @@ fun MemoItemRow(
                         ),
                         cursorBrush = SolidColor(DarkForestGreen),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { rateFocusRequester.requestFocus() }),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -578,7 +578,7 @@ fun MemoItemRow(
                 value = displayRate,
                 onValueChange = { onRateChange(BengaliUtils.toBengaliDigits(it)) },
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
+                    keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Next
                 ),
                 keyboardActions = KeyboardActions(onNext = { amountFocusRequester.requestFocus() }),
@@ -621,7 +621,7 @@ fun MemoItemRow(
                 value = displayAmount,
                 onValueChange = { onAmountChange(BengaliUtils.toBengaliDigits(it)) },
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
+                    keyboardType = KeyboardType.Number,
                     imeAction = if (nextTargetRequester != null) ImeAction.Next else ImeAction.Done
                 ),
                 keyboardActions = if (nextTargetRequester != null) {
