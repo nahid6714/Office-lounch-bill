@@ -235,18 +235,18 @@ object PrintUtils {
 
         canvas.save()
         // Rotate -90 degrees counter-clockwise with clean A4 page margins
-        canvas.translate(15f, startY + 405f)
+        canvas.translate(28f, startY + 410f)
         canvas.rotate(-90f)
 
         val localStartY = 0f
 
-        // Header Banner (Width = 380f, fits within half-page height 421f)
+        // Header Banner (Width = 390f, fits within half-page height 421f)
         val headerPaint = Paint().apply {
             isAntiAlias = true
             color = maroonColor
             style = Paint.Style.FILL
         }
-        val headerRect = RectF(10f, localStartY, 390f, localStartY + 54f)
+        val headerRect = RectF(10f, localStartY, 400f, localStartY + 54f)
         canvas.drawRect(headerRect, headerPaint)
 
         // Title
@@ -257,7 +257,7 @@ object PrintUtils {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(centerName, 200f, localStartY + 30f, titleTextPaint)
+        canvas.drawText(centerName, 205f, localStartY + 30f, titleTextPaint)
 
         // Subtitle
         val subtitleTextPaint = Paint().apply {
@@ -266,9 +266,9 @@ object PrintUtils {
             textSize = 12f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText(subtitle, 200f, localStartY + 48f, subtitleTextPaint)
+        canvas.drawText(subtitle, 205f, localStartY + 48f, subtitleTextPaint)
 
-        // Sawtooth Teeth Bar (Contained within 10f to 390f table bounds)
+        // Sawtooth Teeth Bar (Contained within 10f to 400f table bounds)
         val toothWidth = 11f
         val toothHeight = 6f
         var toothX = 10f
@@ -278,8 +278,8 @@ object PrintUtils {
             style = Paint.Style.FILL
         }
         canvas.save()
-        canvas.clipRect(10f, localStartY, 390f, localStartY + 54f + toothHeight)
-        while (toothX + toothWidth <= 390.1f) {
+        canvas.clipRect(10f, localStartY, 400f, localStartY + 54f + toothHeight)
+        while (toothX + toothWidth <= 400.1f) {
             val path = android.graphics.Path().apply {
                 moveTo(toothX, localStartY + 54f)
                 lineTo(toothX + toothWidth / 2, localStartY + 54f + toothHeight)
@@ -300,13 +300,13 @@ object PrintUtils {
             textAlign = Paint.Align.RIGHT
         }
         val bnDate = BengaliUtils.toBengaliDigits(dateString)
-        canvas.drawText("তারিখ : $bnDate", 390f, localStartY + 84f, metaPaintRight)
+        canvas.drawText("তারিখ : $bnDate", 400f, localStartY + 84f, metaPaintRight)
 
-        // TABLE GRID CONFIG (Total width = 380f)
+        // TABLE GRID CONFIG (Total width = 390f)
         val tableLeft = 10f
-        val tableRight = 390f
+        val tableRight = 400f
         val tableTop = localStartY + 95f
-        val colWidths = floatArrayOf(45f, 155f, 60f, 48f, 72f) // Total width = 380f
+        val colWidths = floatArrayOf(45f, 160f, 62f, 48f, 75f) // Total width = 390f
 
         // Table Header Background
         val tableHeaderRect = RectF(tableLeft, tableTop, tableRight, tableTop + 26f)
@@ -449,7 +449,7 @@ object PrintUtils {
 
         // Signature Row (Line on top, Label text underneath)
         val sigLineY = footerStartY + 18f
-        val sigLineWidth = 140f
+        val sigLineWidth = 165f
 
         val linePaint = Paint().apply {
             isAntiAlias = true
@@ -627,7 +627,7 @@ object PrintUtils {
                     .memo-half {
                         width: 210mm;
                         height: 148mm;
-                        padding: 6mm 10mm;
+                        padding: 4mm 6mm;
                         box-sizing: border-box;
                         position: relative;
                         overflow: hidden;
@@ -680,17 +680,17 @@ object PrintUtils {
                         display: flex;
                         justify-content: flex-end;
                         align-items: center;
-                        padding: 4px 16px;
+                        padding: 4px 6px;
                         font-size: 12px;
                         font-weight: bold;
                         color: #123528;
                     }
                     .dashed-divider {
                         border-bottom: 1.2px dashed #123528;
-                        margin: 0 16px 8px 16px;
+                        margin: 0 6px 8px 6px;
                     }
                     .table-wrapper {
-                        padding: 0 16px;
+                        padding: 0 6px;
                     }
                     .memo-table {
                         width: 100%;
@@ -748,7 +748,7 @@ object PrintUtils {
                         font-weight: bold;
                     }
                     .footer-section {
-                        padding: 10px 16px 0 16px;
+                        padding: 10px 6px 0 6px;
                         font-size: 11px;
                         color: #2C1810;
                     }
@@ -766,7 +766,7 @@ object PrintUtils {
                         font-weight: bold;
                         color: #2C1810;
                         border-top: 1px solid #123528;
-                        width: 140px;
+                        width: 165px;
                         text-align: center;
                         padding-top: 4px;
                         font-size: 11px;
