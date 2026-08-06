@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -104,11 +105,13 @@ fun AppSplashScreen(
                         .size(90.dp)
                         .background(Color(0xFFFFF8EE), CircleShape)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ReceiptLong,
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.app_logo_foreground),
                         contentDescription = "App Logo",
-                        tint = MaroonHeaderColor,
-                        modifier = Modifier.size(52.dp)
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(CircleShape)
                     )
                 }
             }
