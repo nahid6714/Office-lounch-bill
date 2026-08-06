@@ -174,6 +174,10 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
         _currentBillState.update { it.copy(purchaserName = name) }
     }
 
+    fun updatePurchaserLabel(label: String) {
+        _currentBillState.update { it.copy(purchaserLabel = label) }
+    }
+
     fun addItemRow() {
         _currentBillState.update { state ->
             if (state.items.size >= 18) {

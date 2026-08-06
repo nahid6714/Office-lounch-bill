@@ -446,12 +446,25 @@ private fun SingleMemoVoucherCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Start
                 ) {
-                    Text(
-                        text = "ক্রেতার স্বাক্ষর : _______________________",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2C1810)
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.width(130.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(Color(0xFF2C1810))
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = state.purchaserLabel.ifBlank { "ক্রয়কারীর স্বাক্ষর" },
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2C1810),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }

@@ -249,7 +249,8 @@ fun HomeScreen(
                             onUpdateItemRate = { id, rate -> viewModel.updateItemRate(id, rate) },
                             onUpdateItemAmount = { id, amount -> viewModel.updateItemAmount(id, amount) },
                             onRemoveItem = { id -> viewModel.removeItemRow(id) },
-                            onAddItemRow = { viewModel.addItemRow() }
+                            onAddItemRow = { viewModel.addItemRow() },
+                            onPurchaserLabelChange = { viewModel.updatePurchaserLabel(it) }
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -347,6 +348,7 @@ fun HomeScreen(
                         state = currentBillState,
                         onCenterNameChange = { viewModel.updateCenterName(it) },
                         onSubtitleChange = { viewModel.updateSubtitle(it) },
+                        onPurchaserLabelChange = { viewModel.updatePurchaserLabel(it) },
                         onResetTemplate = { viewModel.resetToInitialTemplate() }
                     )
                 }
@@ -370,6 +372,7 @@ fun HomeScreen(
                     dateString = currentBillState.dateString,
                     items = validItems,
                     totalAmount = currentBillState.totalAmount,
+                    purchaserLabel = currentBillState.purchaserLabel,
                     position = pos
                 )
             },
@@ -382,6 +385,7 @@ fun HomeScreen(
                     dateString = currentBillState.dateString,
                     items = validItems,
                     totalAmount = currentBillState.totalAmount,
+                    purchaserLabel = currentBillState.purchaserLabel,
                     position = pos
                 )
             }

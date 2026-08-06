@@ -447,13 +447,25 @@ object PrintUtils {
             textSize = 11f
         }
 
-        // Signature Row
-        val sigY = footerStartY + 16f
+        // Signature Row (Line on top, Label text underneath)
+        val sigLineY = footerStartY + 16f
+        val sigLineWidth = 130f
+
+        val linePaint = Paint().apply {
+            isAntiAlias = true
+            color = Color.parseColor("#1A0D08")
+            strokeWidth = 1f
+        }
+        canvas.drawLine(tableLeft, sigLineY, tableLeft + sigLineWidth, sigLineY, linePaint)
+
+        val sigTextY = sigLineY + 14f
         val sigPaint = Paint(footerPaint).apply {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
-            textAlign = Paint.Align.LEFT
+            textAlign = Paint.Align.CENTER
+            textSize = 10.5f
         }
-        canvas.drawText("$purchaserLabel : _______________________", tableLeft, sigY, sigPaint)
+        val labelText = purchaserLabel.ifBlank { "ক্রয়কারীর স্বাক্ষর" }
+        canvas.drawText(labelText, tableLeft + (sigLineWidth / 2f), sigTextY, sigPaint)
 
         canvas.restore()
     }
@@ -566,7 +578,7 @@ object PrintUtils {
                     <div class="footer-section">
                         <div class="signatures-row">
                             <div class="sig-box">
-                                $purchaserLabel : <span class="sig-line"></span>
+                                ${purchaserLabel.ifBlank { "ক্রয়কারীর স্বাক্ষর" }}
                             </div>
                         </div>
                     </div>
@@ -753,12 +765,11 @@ object PrintUtils {
                     .sig-box {
                         font-weight: bold;
                         color: #2C1810;
-                    }
-                    .sig-line {
-                        display: inline-block;
+                        border-top: 1px solid #123528;
                         width: 140px;
-                        border-bottom: 1px solid #123528;
-                        margin-left: 6px;
+                        text-align: center;
+                        padding-top: 4px;
+                        font-size: 11px;
                     }
                 </style>
             </head>

@@ -80,7 +80,6 @@ fun MemoVoucherCard(
     onUpdateItemAmount: (id: String, amount: String) -> Unit,
     onRemoveItem: (id: String) -> Unit,
     onAddItemRow: () -> Unit,
-    onPurchaserLabelChange: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -334,49 +333,16 @@ fun MemoVoucherCard(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.width(160.dp)
+                        modifier = Modifier.width(140.dp)
                     ) {
                         Divider(color = ForestGreenText, thickness = 1.dp)
                         Spacer(modifier = Modifier.height(4.dp))
-                        if (onPurchaserLabelChange != null) {
-                            BasicTextField(
-                                value = state.purchaserLabel,
-                                onValueChange = onPurchaserLabelChange,
-                                textStyle = TextStyle(
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.DarkGray,
-                                    textAlign = TextAlign.Center
-                                ),
-                                singleLine = true,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(Color(0x10000000), RoundedCornerShape(4.dp))
-                                    .padding(vertical = 2.dp, horizontal = 4.dp)
-                                    .testTag("purchaser_label_input"),
-                                cursorBrush = SolidColor(DarkForestGreen),
-                                decorationBox = { innerTextField ->
-                                    Box(contentAlignment = Alignment.Center) {
-                                        if (state.purchaserLabel.isEmpty()) {
-                                            Text(
-                                                text = "স্বাক্ষরের টাইটেল...",
-                                                fontSize = 11.sp,
-                                                color = Color.Gray,
-                                                textAlign = TextAlign.Center
-                                            )
-                                        }
-                                        innerTextField()
-                                    }
-                                }
-                            )
-                        } else {
-                            Text(
-                                text = state.purchaserLabel,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.DarkGray
-                            )
-                        }
+                        Text(
+                            text = state.purchaserLabel,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.DarkGray
+                        )
                     }
                 }
             }

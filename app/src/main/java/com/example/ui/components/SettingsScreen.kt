@@ -34,6 +34,7 @@ fun SettingsScreen(
     state: CurrentBillState,
     onCenterNameChange: (String) -> Unit,
     onSubtitleChange: (String) -> Unit,
+    onPurchaserLabelChange: (String) -> Unit = {},
     onResetTemplate: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -103,6 +104,24 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("subtitle_setting_input")
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = state.purchaserLabel,
+                    onValueChange = onPurchaserLabelChange,
+                    label = { Text("স্বাক্ষরের টাইটেল (যেমন: ক্রেতার স্বাক্ষর / ক্রয়কারীর স্বাক্ষর)") },
+                    singleLine = true,
+                    textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 15.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedBorderColor = DarkForestGreen
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("purchaser_label_setting_input")
                 )
             }
         }
