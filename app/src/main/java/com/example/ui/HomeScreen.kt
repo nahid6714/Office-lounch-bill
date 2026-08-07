@@ -9,7 +9,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -284,7 +286,8 @@ fun HomeScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(bottom = 20.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         // Print / Preview Button (Forest Green Gradient)
                                         Box(
@@ -298,13 +301,24 @@ fun HomeScreen(
                                                     )
                                                 )
                                                 .clickable { showPreviewDialog = true }
-                                                .testTag("print_bill_button"),
+                                                .testTag("print_bill_button")
+                                                .padding(horizontal = 4.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(Icons.Default.Print, contentDescription = null, tint = Color.White)
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text("প্রিন্ট / প্রিভিউ", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Icon(Icons.Default.Print, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = "প্রিন্ট / প্রিভিউ",
+                                                    fontSize = 13.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White,
+                                                    maxLines = 1,
+                                                    softWrap = false
+                                                )
                                             }
                                         }
 
@@ -320,13 +334,24 @@ fun HomeScreen(
                                                     )
                                                 )
                                                 .clickable { viewModel.saveCurrentBill() }
-                                                .testTag("save_bill_button"),
+                                                .testTag("save_bill_button")
+                                                .padding(horizontal = 4.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text("সংরক্ষণ", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Icon(Icons.Default.Save, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = "সংরক্ষণ",
+                                                    fontSize = 13.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White,
+                                                    maxLines = 1,
+                                                    softWrap = false
+                                                )
                                             }
                                         }
 
@@ -336,9 +361,10 @@ fun HomeScreen(
                                             modifier = Modifier
                                                 .height(48.dp)
                                                 .testTag("clear_bill_button"),
+                                            contentPadding = PaddingValues(horizontal = 10.dp),
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
-                                            Icon(Icons.Default.Clear, contentDescription = "নতুন মেমো", tint = Color.DarkGray)
+                                            Icon(Icons.Default.Clear, contentDescription = "নতুন মেমো", tint = Color.DarkGray, modifier = Modifier.size(20.dp))
                                         }
                                     }
                                 }

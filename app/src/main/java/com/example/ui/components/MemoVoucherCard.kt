@@ -72,6 +72,8 @@ import com.example.ui.theme.LightForestGreen
 import com.example.ui.theme.WarmBorderColor
 import com.example.util.BengaliUtils
 
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.filled.Check
@@ -217,47 +219,95 @@ fun MemoVoucherCard(
                     state.items.map { it.name.trim() }.filter { it.isNotBlank() }.toSet()
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Left: "নতুন আইটেম যোগ করুন"
-                    OutlinedButton(
-                        onClick = onAddItemRow,
-                        enabled = canAddItem,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp)
-                            .testTag("add_item_button"),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = DarkForestGreen
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            tint = DarkForestGreen,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (canAddItem) "নতুন আইটেম যোগ করুন" else "সর্বোচ্চ ১৮ টি",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = DarkForestGreen
-                        )
-                    }
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val isNarrow = maxWidth < 340.dp
+                    if (isNarrow) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = onAddItemRow,
+                                enabled = canAddItem,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp)
+                                    .testTag("add_item_button"),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = DarkForestGreen
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = DarkForestGreen,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (canAddItem) "নতুন আইটেম যোগ করুন" else "সর্বোচ্চ ১৮ টি",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = DarkForestGreen,
+                                    maxLines = 1
+                                )
+                            }
 
-                    // Right: "দ্রুত আইটেম যোগ করুন"
-                    QuickItemSelectorButton(
-                        presets = quickPresets,
-                        addedItemNames = addedItemNames,
-                        onPresetClick = onPresetClick,
-                        onManagePresetsClick = { showManagePresetsDialog = true },
-                        modifier = Modifier.weight(1f)
-                    )
+                            QuickItemSelectorButton(
+                                presets = quickPresets,
+                                addedItemNames = addedItemNames,
+                                onPresetClick = onPresetClick,
+                                onManagePresetsClick = { showManagePresetsDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(
+                                onClick = onAddItemRow,
+                                enabled = canAddItem,
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp)
+                                    .testTag("add_item_button"),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = DarkForestGreen
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = DarkForestGreen,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = if (canAddItem) "নতুন আইটেম যোগ করুন" else "সর্বোচ্চ ১৮ টি",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = DarkForestGreen,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+
+                            QuickItemSelectorButton(
+                                presets = quickPresets,
+                                addedItemNames = addedItemNames,
+                                onPresetClick = onPresetClick,
+                                onManagePresetsClick = { showManagePresetsDialog = true },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
                 }
 
                 if (showManagePresetsDialog) {

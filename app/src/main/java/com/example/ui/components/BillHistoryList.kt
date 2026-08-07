@@ -258,7 +258,7 @@ fun HistoryBillItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "তারিখ: ${BengaliUtils.toBengaliDigits(bill.dateString)}",
                         fontSize = 16.sp,

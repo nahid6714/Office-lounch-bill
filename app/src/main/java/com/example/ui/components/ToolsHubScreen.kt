@@ -260,7 +260,8 @@ fun ToolCardItem(
                         fontFamily = HeadingFontFamily,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (tool.isAvailable) Color.Black else Color.DarkGray
+                        color = if (tool.isAvailable) Color.Black else Color.DarkGray,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
 
                     // Badge
