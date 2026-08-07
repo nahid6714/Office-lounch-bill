@@ -98,6 +98,9 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
+    val updateManager = remember { AppUpdateManager() }
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+
     BackHandler(enabled = selectedTool != null) {
         selectedTool = null
     }
