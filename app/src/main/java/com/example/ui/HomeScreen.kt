@@ -96,16 +96,6 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    val updateManager = remember { AppUpdateManager() }
-    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
-
-    LaunchedEffect(Unit) {
-        val info = updateManager.checkForUpdate(context)
-        if (info.hasUpdate) {
-            updateInfo = info
-        }
-    }
-
     BackHandler(enabled = selectedTool != null) {
         selectedTool = null
     }
@@ -438,15 +428,6 @@ fun HomeScreen(
                     position = pos
                 )
             }
-        )
-    }
-
-    // In-App Update Dialog
-    updateInfo?.let { info ->
-        UpdateDialog(
-            updateInfo = info,
-            updateManager = updateManager,
-            onDismiss = { updateInfo = null }
         )
     }
 }

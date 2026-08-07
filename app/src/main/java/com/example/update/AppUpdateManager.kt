@@ -42,9 +42,13 @@ class AppUpdateManager(
                 val json = JSONObject(jsonStr)
 
                 val tagName = json.optString("tag_name", "").removePrefix("v").trim()
-                val releaseNotes = json.optString("body", "নতুন সংস্করণে বিভিন্ন ফিচার উন্নত করা হয়েছে।").trim()
+                val rawNotes = json.optString("body", "").trim()
+                val cleanNotes = sanitizeReleaseNotes(rawNotes)
+                val rawPublishedAt = json.optString("published_at", "")
+                val formattedDate = formatReleaseDate(rawPublishedAt)
 
                 var downloadUrl = ""
+                var apkSizeBytes = 0L
                 val assets = json.optJSONArray("assets")
                 if (assets != null) {
                     for (i in 0 until assets.length()) {
@@ -52,11 +56,13 @@ class AppUpdateManager(
                         val name = asset.optString("name", "")
                         if (name.endsWith(".apk", ignoreCase = true)) {
                             downloadUrl = asset.optString("browser_download_url", "")
+                            apkSizeBytes = asset.optLong("size", 0L)
                             break
                         }
                     }
                 }
 
+                val formattedSize = formatFileSize(apkSizeBytes)
                 val currentVersionName = BuildConfig.VERSION_NAME
                 val currentVersionCode = BuildConfig.VERSION_CODE
 
@@ -66,9 +72,11 @@ class AppUpdateManager(
                     return@withContext UpdateInfo(
                         hasUpdate = true,
                         latestVersionName = tagName,
-                        releaseNotes = if (releaseNotes.isBlank()) "নতুন উন্নতি অন্তর্ভুক্ত করা হয়েছে।" else releaseNotes,
+                        releaseNotes = cleanNotes,
                         downloadUrl = downloadUrl,
-                        currentVersionName = currentVersionName
+                        currentVersionName = currentVersionName,
+                        publishedAt = formattedDate,
+                        apkSizeFormatted = formattedSize
                     )
                 }
             }
@@ -76,7 +84,36 @@ class AppUpdateManager(
             // Silently ignore errors on failure
         }
 
-        return@withContext UpdateInfo(hasUpdate = false)
+        return@withContext UpdateInfo(
+            hasUpdate = false,
+            currentVersionName = BuildConfig.VERSION_NAME
+        )
+    }
+
+    private fun formatReleaseDate(rawIsoDate: String): String {
+        if (rawIsoDate.isBlank()) return "আজ"
+        return try {
+            val datePart = rawIsoDate.take(10)
+            val parts = datePart.split("-")
+            if (parts.size == 3) {
+                val year = com.example.util.BengaliUtils.toBengaliDigits(parts[0])
+                val month = com.example.util.BengaliUtils.toBengaliDigits(parts[1])
+                val day = com.example.util.BengaliUtils.toBengaliDigits(parts[2])
+                "$day/$month/$year"
+            } else {
+                com.example.util.BengaliUtils.toBengaliDigits(datePart)
+            }
+        } catch (e: Exception) {
+            "আজ"
+        }
+    }
+
+    private fun formatFileSize(sizeBytes: Long): String {
+        if (sizeBytes <= 0) return ""
+        val mb = sizeBytes.toDouble() / (1024 * 1024)
+        val formatted = String.format("%.1f MB", mb)
+        return com.example.util.BengaliUtils.toBengaliDigits(formatted)
+            .replace("MB", "মেগাবাইট")
     }
 
     /**

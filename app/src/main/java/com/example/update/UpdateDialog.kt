@@ -143,7 +143,32 @@ fun UpdateDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                if (updateInfo.publishedAt.isNotBlank() || updateInfo.apkSizeFormatted.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        if (updateInfo.publishedAt.isNotBlank()) {
+                            Text(
+                                text = "প্রকাশের তারিখ: ${updateInfo.publishedAt}",
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        if (updateInfo.apkSizeFormatted.isNotBlank()) {
+                            Text(
+                                text = "সাইজ: ${updateInfo.apkSizeFormatted}",
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Release Notes Header
                 Text(
@@ -318,7 +343,7 @@ fun UpdateDialog(
                     modifier = Modifier.testTag("update_later_button")
                 ) {
                     Text(
-                        text = "পরে",
+                        text = "পরে করব",
                         color = Color.DarkGray,
                         fontSize = 13.sp
                     )

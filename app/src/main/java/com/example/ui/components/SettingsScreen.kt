@@ -17,9 +17,21 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import com.example.BuildConfig
+import com.example.update.AppUpdateManager
+import com.example.update.UpdateDialog
+import com.example.update.UpdateInfo
+import com.example.util.BengaliUtils
+import kotlinx.coroutines.launch
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -308,6 +320,122 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // App Update Section Card
+        val context = LocalContext.current
+        val coroutineScope = rememberCoroutineScope()
+        val updateManager = remember { AppUpdateManager() }
+        var isCheckingUpdate by remember { mutableStateOf(false) }
+        var noUpdateMessage by remember { mutableStateOf<String?>(null) }
+        var updateInfoToShow by remember { mutableStateOf<UpdateInfo?>(null) }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = CreamPaperBg)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "অ্যাপ আপডেট (Check for Updates):",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkForestGreen
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "বর্তমান ইনস্টলকৃত ভার্সন: v${BengaliUtils.toBengaliDigits(BuildConfig.VERSION_NAME)} (Code: ${BengaliUtils.toBengaliDigits(BuildConfig.VERSION_CODE.toString())})",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = ForestGreenText
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (noUpdateMessage != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = DarkForestGreen,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = noUpdateMessage!!,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = DarkForestGreen
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                Button(
+                    onClick = {
+                        if (!isCheckingUpdate) {
+                            isCheckingUpdate = true
+                            noUpdateMessage = null
+                            coroutineScope.launch {
+                                val info = updateManager.checkForUpdate(context)
+                                isCheckingUpdate = false
+                                if (info.hasUpdate) {
+                                    updateInfoToShow = info
+                                } else {
+                                    noUpdateMessage = "আপনি সর্বশেষ সংস্করণ ব্যবহার করছেন।"
+                                }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen, contentColor = Color.White),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
+                        .testTag("check_for_updates_button")
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isCheckingUpdate) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("আপডেট চেক করা হচ্ছে...", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.sp)
+                        } else {
+                            Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = Color.White)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("আপডেট চেক করুন", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        if (updateInfoToShow != null) {
+            UpdateDialog(
+                updateInfo = updateInfoToShow!!,
+                updateManager = updateManager,
+                onDismiss = { updateInfoToShow = null }
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))

@@ -6,5 +6,7 @@ data class UpdateInfo(
     val latestVersionCode: Int = 0,
     val releaseNotes: String = "",
     val downloadUrl: String = "",
-    val currentVersionName: String = ""
+    val currentVersionName: String = "",
+    val publishedAt: String = "",
+    val apkSizeFormatted: String = ""
 )
