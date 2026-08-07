@@ -16,8 +16,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class AppUpdateManager(
-    private val repoOwner: String = "RahatDev11",
-    private val repoName: String = "Office-lounch-bill"
+    private val repoOwner: String = "nahid6714",
+    private val repoName: String = "tools"
 ) {
 
     private val apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases/latest"
