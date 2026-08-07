@@ -234,9 +234,9 @@ object PrintUtils {
         val maroonColor = Color.parseColor("#123528")
 
         canvas.save()
-        // Position at X=15pt, Y=startY + 411pt and rotate -90 degrees counter-clockwise
+        // Position at X=15pt, Y=startY + 423pt and rotate -90 degrees counter-clockwise
         // This maps Canvas Y to Page X (595pt width) and Canvas X to Page Y (421pt half-page height)
-        canvas.translate(15f, startY + 411f)
+        canvas.translate(15f, startY + 423f)
         canvas.rotate(-90f)
 
         val localStartY = 0f

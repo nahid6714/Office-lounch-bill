@@ -238,7 +238,69 @@ fun DocumentScannerScreen(
         }
     }
 
-    val launchMLKitScanner = { type: ScanType ->
+    var tempPhotoFile by remember { mutableStateOf<File?>(null) }
+
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempPhotoFile != null && tempPhotoFile!!.exists() && tempPhotoFile!!.length() > 0) {
+            coroutineScope.launch(Dispatchers.IO) {
+                val destDir = File(context.filesDir, "scanned_documents")
+                if (!destDir.exists()) destDir.mkdirs()
+
+                when (pendingScanType) {
+                    ScanType.GENERAL -> {
+                        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                        val destFile = File(destDir, "DOC_$timeStamp.jpg")
+                        tempPhotoFile!!.copyTo(destFile, overwrite = true)
+                        withContext(Dispatchers.Main) {
+                            loadScannedFiles()
+                            onShowSnackbar("ডকুমেন্ট স্ক্যান সম্পন্ন হয়েছে!")
+                        }
+                    }
+                    ScanType.CARD_FRONT -> {
+                        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                        val destFile = File(destDir, "CARD_FRONT_$timeStamp.jpg")
+                        tempPhotoFile!!.copyTo(destFile, overwrite = true)
+                        val savedUri = Uri.fromFile(destFile)
+                        withContext(Dispatchers.Main) {
+                            cardFrontUri = savedUri
+                            onShowSnackbar("সামনের পাশ স্ক্যান সম্পন্ন!")
+                        }
+                    }
+                    ScanType.CARD_BACK -> {
+                        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                        val destFile = File(destDir, "CARD_BACK_$timeStamp.jpg")
+                        tempPhotoFile!!.copyTo(destFile, overwrite = true)
+                        val savedUri = Uri.fromFile(destFile)
+                        withContext(Dispatchers.Main) {
+                            cardBackUri = savedUri
+                            onShowSnackbar("পেছনের পাশ স্ক্যান সম্পন্ন!")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    val launchSystemCamera = {
+        try {
+            val tempDir = File(context.cacheDir, "camera_photos")
+            if (!tempDir.exists()) tempDir.mkdirs()
+            val tempFile = File.createTempFile("scan_", ".jpg", tempDir)
+            tempPhotoFile = tempFile
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                tempFile
+            )
+            takePictureLauncher.launch(uri)
+        } catch (e: Exception) {
+            onShowSnackbar("ক্যামেরা চালু করতে ব্যর্থ হয়েছে: ${e.localizedMessage}")
+        }
+    }
+
+    val launchScannerOrCamera = { type: ScanType ->
         pendingScanType = type
         val options = GmsDocumentScannerOptions.Builder()
             .setGalleryImportAllowed(true)
@@ -255,18 +317,22 @@ fun DocumentScannerScreen(
                 GmsDocumentScanning.getClient(options)
                     .getStartScanIntent(activity)
                     .addOnSuccessListener { intentSender ->
-                        scannerLauncher.launch(
-                            IntentSenderRequest.Builder(intentSender).build()
-                        )
+                        try {
+                            scannerLauncher.launch(
+                                IntentSenderRequest.Builder(intentSender).build()
+                            )
+                        } catch (e: Exception) {
+                            launchSystemCamera()
+                        }
                     }
-                    .addOnFailureListener { e ->
-                        onShowSnackbar("স্ক্যানার চালু করতে সমস্যা: ${e.localizedMessage}")
+                    .addOnFailureListener {
+                        launchSystemCamera()
                     }
             } catch (e: Exception) {
-                onShowSnackbar("স্ক্যানার চালু করার সময় ত্রুটি ঘটেছে: ${e.localizedMessage}")
+                launchSystemCamera()
             }
         } else {
-            onShowSnackbar("অ্যাক্টিভিটি কনটেক্সট পাওয়া যায়নি")
+            launchSystemCamera()
         }
     }
 
@@ -274,7 +340,7 @@ fun DocumentScannerScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            launchMLKitScanner(pendingScanType)
+            launchScannerOrCamera(pendingScanType)
         } else {
             val showRationale = activity?.let {
                 ActivityCompat.shouldShowRequestPermissionRationale(it, Manifest.permission.CAMERA)
@@ -295,7 +361,7 @@ fun DocumentScannerScreen(
         ) == PackageManager.PERMISSION_GRANTED
 
         if (hasCameraPermission) {
-            launchMLKitScanner(type)
+            launchScannerOrCamera(type)
         } else {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
