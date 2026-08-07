@@ -65,6 +65,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.AppSplashScreen
 import com.example.ui.components.BillHistoryList
 import com.example.ui.components.DocumentScannerScreen
+import com.example.ui.components.GlobalSettingsScreen
 import com.example.ui.components.MemoVoucherCard
 import com.example.ui.components.QuickPresetChips
 import com.example.ui.components.SettingsScreen
@@ -95,6 +96,7 @@ fun HomeScreen(
 
     var selectedTool by remember { mutableStateOf<String?>(null) }
     var selectedTab by remember { mutableIntStateOf(0) }
+    var showGlobalSettings by remember { mutableStateOf(false) }
     var showPreviewDialog by remember { mutableStateOf(false) }
     var isSplashLoading by remember { mutableStateOf(true) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -103,8 +105,12 @@ fun HomeScreen(
     val updateManager = remember { AppUpdateManager() }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
 
-    BackHandler(enabled = selectedTool != null) {
-        selectedTool = null
+    BackHandler(enabled = showGlobalSettings || selectedTool != null) {
+        if (showGlobalSettings) {
+            showGlobalSettings = false
+        } else {
+            selectedTool = null
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -150,13 +156,14 @@ fun HomeScreen(
                     TopAppBar(
                         title = {
                             Text(
-                                text = when (selectedTool) {
-                                    "food_bill" -> when (selectedTab) {
+                                text = when {
+                                    showGlobalSettings -> "অ্যাপ সেটিংস"
+                                    selectedTool == "food_bill" -> when (selectedTab) {
                                         1 -> "সংরক্ষিত হিসাব"
                                         2 -> "মেমো সেটিংস"
                                         else -> if (currentBillState.centerName.isNotBlank()) "খাবার বিল - " + currentBillState.centerName else "আল বারাকা খাবার বিল"
                                     }
-                                    "doc_scanner" -> "ডকুমেন্ট স্ক্যানার"
+                                    selectedTool == "doc_scanner" -> "ডকুমেন্ট স্ক্যানার"
                                     else -> "ডিজিটাল টুলস হাব"
                                 },
                                 fontFamily = HeadingFontFamily,
@@ -165,11 +172,31 @@ fun HomeScreen(
                             )
                         },
                         navigationIcon = {
-                            if (selectedTool != null) {
-                                IconButton(onClick = { selectedTool = null }) {
+                            if (showGlobalSettings || selectedTool != null) {
+                                IconButton(onClick = {
+                                    if (showGlobalSettings) {
+                                        showGlobalSettings = false
+                                    } else {
+                                        selectedTool = null
+                                    }
+                                }) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "টুলস হাব-এ ফিরে যান",
+                                        contentDescription = "ফিরে যান",
+                                        tint = Color.White
+                                    )
+                                }
+                            }
+                        },
+                        actions = {
+                            if (!showGlobalSettings) {
+                                IconButton(
+                                    onClick = { showGlobalSettings = true },
+                                    modifier = Modifier.testTag("global_settings_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Settings,
+                                        contentDescription = "অ্যাপ সেটিংস",
                                         tint = Color.White
                                     )
                                 }
@@ -182,7 +209,7 @@ fun HomeScreen(
                     )
                 },
                 bottomBar = {
-                    if (selectedTool == "food_bill") {
+                    if (!showGlobalSettings && selectedTool == "food_bill") {
                         NavigationBar(
                             containerColor = Color(0xFFEBE2D8),
                             contentColor = DarkForestGreen
@@ -244,7 +271,9 @@ fun HomeScreen(
                         .padding(innerPadding)
                         .background(Color(0xFFFBF8F3))
                 ) {
-                    if (selectedTool == null) {
+                    if (showGlobalSettings) {
+                        GlobalSettingsScreen()
+                    } else if (selectedTool == null) {
                         ToolsHubScreen(
                             onSelectFoodBillTool = {
                                 selectedTool = "food_bill"
