@@ -1,9 +1,11 @@
 package com.example.ui.components
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -11,6 +13,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -94,6 +97,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.example.ui.theme.DarkForestGreen
@@ -149,6 +154,7 @@ fun DocumentScannerScreen(
     var cardFrontUri by remember { mutableStateOf<Uri?>(null) }
     var cardBackUri by remember { mutableStateOf<Uri?>(null) }
     var showCardLayoutEditor by remember { mutableStateOf(false) }
+    var showPermissionDeniedDialog by remember { mutableStateOf(false) }
 
     fun loadScannedFiles() {
         coroutineScope.launch(Dispatchers.IO) {
@@ -232,7 +238,7 @@ fun DocumentScannerScreen(
         }
     }
 
-    val startScan = { type: ScanType ->
+    val launchMLKitScanner = { type: ScanType ->
         pendingScanType = type
         val options = GmsDocumentScannerOptions.Builder()
             .setGalleryImportAllowed(true)
@@ -245,18 +251,53 @@ fun DocumentScannerScreen(
             .build()
 
         if (activity != null) {
-            GmsDocumentScanning.getClient(options)
-                .getStartScanIntent(activity)
-                .addOnSuccessListener { intentSender ->
-                    scannerLauncher.launch(
-                        IntentSenderRequest.Builder(intentSender).build()
-                    )
-                }
-                .addOnFailureListener { e ->
-                    onShowSnackbar("স্ক্যানার চালু করতে সমস্যা: ${e.localizedMessage}")
-                }
+            try {
+                GmsDocumentScanning.getClient(options)
+                    .getStartScanIntent(activity)
+                    .addOnSuccessListener { intentSender ->
+                        scannerLauncher.launch(
+                            IntentSenderRequest.Builder(intentSender).build()
+                        )
+                    }
+                    .addOnFailureListener { e ->
+                        onShowSnackbar("স্ক্যানার চালু করতে সমস্যা: ${e.localizedMessage}")
+                    }
+            } catch (e: Exception) {
+                onShowSnackbar("স্ক্যানার চালু করার সময় ত্রুটি ঘটেছে: ${e.localizedMessage}")
+            }
         } else {
             onShowSnackbar("অ্যাক্টিভিটি কনটেক্সট পাওয়া যায়নি")
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            launchMLKitScanner(pendingScanType)
+        } else {
+            val showRationale = activity?.let {
+                ActivityCompat.shouldShowRequestPermissionRationale(it, Manifest.permission.CAMERA)
+            } ?: true
+            if (!showRationale) {
+                showPermissionDeniedDialog = true
+            } else {
+                onShowSnackbar("ক্যামেরা পারমিশন অনুমতি না দিলে স্ক্যান করা সম্ভব নয়")
+            }
+        }
+    }
+
+    val startScan = { type: ScanType ->
+        pendingScanType = type
+        val hasCameraPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasCameraPermission) {
+            launchMLKitScanner(type)
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
@@ -904,6 +945,47 @@ fun DocumentScannerScreen(
             },
             dismissButton = {
                 OutlinedButton(onClick = { deleteConfirmDoc = null }) {
+                    Text("বাতিল")
+                }
+            }
+        )
+    }
+
+    // Camera Permission Denied Dialog
+    if (showPermissionDeniedDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionDeniedDialog = false },
+            title = {
+                Text(
+                    text = "ক্যামেরা পারমিশন প্রয়োজন",
+                    fontFamily = HeadingFontFamily,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text("ডকুমেন্ট স্ক্যান করার জন্য ক্যামেরা পারমিশন প্রয়োজন। অনুগ্রহ করে অ্যাপ সেটিংস থেকে ক্যামেরা পারমিশন চালু করুন।")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showPermissionDeniedDialog = false
+                        try {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            onShowSnackbar("সেটিংস অ্যাপ খুলতে ব্যর্থ হয়েছে")
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen)
+                ) {
+                    Text("অ্যাপ সেটিংস খুলুন", color = Color.White)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showPermissionDeniedDialog = false }) {
                     Text("বাতিল")
                 }
             }
