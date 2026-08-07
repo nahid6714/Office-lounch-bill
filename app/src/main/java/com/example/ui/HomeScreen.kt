@@ -261,10 +261,10 @@ fun HomeScreen(
                                         .verticalScroll(rememberScrollState())
                                         .padding(12.dp)
                                 ) {
-                                    // Quick Presets Row
-                                    QuickPresetChips(
-                                        presets = quickPresets,
-                                        addedItemNames = currentBillState.items.map { it.name.trim() }.filter { it.isNotBlank() }.toSet(),
+                                    // Memo Paper Cash Voucher
+                                    MemoVoucherCard(
+                                        state = currentBillState,
+                                        quickPresets = quickPresets,
                                         onPresetClick = { name, qty, rate, amount ->
                                             viewModel.addQuickPresetItem(name, qty, rate, amount)
                                         },
@@ -276,14 +276,7 @@ fun HomeScreen(
                                         },
                                         onResetDefaults = {
                                             viewModel.resetQuickPresetsToDefault()
-                                        }
-                                    )
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    // Memo Paper Cash Voucher
-                                    MemoVoucherCard(
-                                        state = currentBillState,
+                                        },
                                         onUpdateDateClick = { datePickerDialog.show() },
                                         onUpdateItemName = { id, name -> viewModel.updateItemName(id, name) },
                                         onUpdateItemQty = { id, qty -> viewModel.updateItemQuantity(id, qty) },
@@ -387,6 +380,16 @@ fun HomeScreen(
                                 // Settings View
                                 SettingsScreen(
                                     state = currentBillState,
+                                    quickPresets = quickPresets,
+                                    onAddCustomPreset = { name, qty, rate, amount ->
+                                        viewModel.addCustomQuickPreset(name, qty, rate, amount)
+                                    },
+                                    onRemovePreset = { preset ->
+                                        viewModel.removeQuickPreset(preset)
+                                    },
+                                    onResetPresetsDefault = {
+                                        viewModel.resetQuickPresetsToDefault()
+                                    },
                                     onCenterNameChange = { viewModel.updateCenterName(it) },
                                     onSubtitleChange = { viewModel.updateSubtitle(it) },
                                     onPurchaserLabelChange = { viewModel.updatePurchaserLabel(it) },

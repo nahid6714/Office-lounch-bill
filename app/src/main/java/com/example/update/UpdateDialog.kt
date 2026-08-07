@@ -14,7 +14,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.foundation.layout.size
+import java.io.File
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -60,6 +63,8 @@ fun UpdateDialog(
     var isDownloading by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableIntStateOf(0) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var downloadedApkFile by remember { mutableStateOf<File?>(null) }
+    var isDownloaded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = {
@@ -174,8 +179,34 @@ fun UpdateDialog(
                     }
                 }
 
-                // Download Progress / Error Section
-                if (isDownloading) {
+                // Download Progress / Error / Success Section
+                if (isDownloaded && downloadedApkFile != null) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DownloadDone,
+                                contentDescription = null,
+                                tint = DarkForestGreen,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "ডাউনলোড ১০০% সম্পন্ন হয়েছে! নিচে \"ইন্সটল করুন\" বাটনে চাপ দিন।",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = DarkForestGreen
+                            )
+                        }
+                    }
+                } else if (isDownloading) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(
@@ -218,10 +249,35 @@ fun UpdateDialog(
             }
         },
         confirmButton = {
-            if (!isDownloading) {
+            if (isDownloaded && downloadedApkFile != null) {
+                Button(
+                    onClick = {
+                        updateManager.installApk(context, downloadedApkFile!!)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen, contentColor = Color.White),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.testTag("install_now_button")
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.DownloadDone,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "ইন্সটল করুন",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            } else if (!isDownloading) {
                 Button(
                     onClick = {
                         isDownloading = true
+                        isDownloaded = false
                         errorMessage = null
                         scope.launch {
                             updateManager.downloadAndInstallApk(
@@ -229,6 +285,11 @@ fun UpdateDialog(
                                 downloadUrl = updateInfo.downloadUrl,
                                 onProgress = { progress ->
                                     downloadProgress = progress
+                                },
+                                onSuccess = { apkFile ->
+                                    isDownloading = false
+                                    isDownloaded = true
+                                    downloadedApkFile = apkFile
                                 },
                                 onError = { err ->
                                     isDownloading = false

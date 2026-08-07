@@ -5,7 +5,6 @@
 ---
 
 ## ✨ প্রধান ফিচার
-
 - 🧾 দৈনিক খাবার বিল তৈরি
 - 📄 A4 Half Page প্রিন্ট সাপোর্ট
 - 🖨️ PDF Export ও Print Preview
@@ -20,7 +19,6 @@
 ---
 
 ## 📌 বর্তমান সুবিধাসমূহ
-
 - বাংলা ভাষা সমর্থন
 - বাংলা সংখ্যা সমর্থন
 - প্রিন্ট-ফ্রেন্ডলি ডিজাইন
@@ -33,7 +31,6 @@
 ---
 
 ## 🚀 ভবিষ্যৎ পরিকল্পনা
-
 - Auto App Update
 - Backup & Restore
 - Excel Export
@@ -48,7 +45,6 @@
 ---
 
 ## 🛠️ ব্যবহৃত প্রযুক্তি
-
 - Kotlin
 - Jetpack Compose
 - Material 3
@@ -60,13 +56,11 @@
 ---
 
 ## 📦 Build
-
 এই প্রজেক্ট GitHub Actions ব্যবহার করে স্বয়ংক্রিয়ভাবে APK Build করতে সক্ষম।
 
 ---
 
 ## 📱 Minimum Requirements
-
 - Android 7.0 (API 24)
 - RAM: 2 GB+
 - সম্পূর্ণ Offline ব্যবহার করা যায়
@@ -74,14 +68,10 @@
 ---
 
 ## 👨‍💻 Developer
-
 **Nahid Hossain**
-
-GitHub:
-https://github.com/nahid6714
+GitHub: https://github.com/nahid6714
 
 ---
 
 ## 📄 License
-
 এই প্রজেক্ট শুধুমাত্র শিক্ষামূলক ও ব্যক্তিগত ব্যবহারের জন্য তৈরি করা হয়েছে।

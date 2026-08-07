@@ -110,6 +110,7 @@ class AppUpdateManager(
         context: Context,
         downloadUrl: String,
         onProgress: (Int) -> Unit,
+        onSuccess: (File) -> Unit,
         onError: (String) -> Unit
     ) = withContext(Dispatchers.IO) {
         try {
@@ -168,6 +169,7 @@ class AppUpdateManager(
 
             withContext(Dispatchers.Main) {
                 onProgress(100)
+                onSuccess(apkFile)
                 installApk(context, apkFile)
             }
 
@@ -176,6 +178,56 @@ class AppUpdateManager(
                 onError(e.localizedMessage ?: "ডাউনলোড করতে ব্যর্থ হয়েছে। ইন্টারনেট কানেকশন চেক করুন।")
             }
         }
+    }
+
+    /**
+     * Sanitizes raw release notes body from GitHub releases, removing commit hashes,
+     * developer commit messages, git technical tags, and formatting into clean Bengali.
+     */
+    private fun sanitizeReleaseNotes(rawBody: String): String {
+        if (rawBody.isBlank()) {
+            return "• অ্যাপের পারফরম্যান্স ও অভিজ্ঞতা উন্নত করা হয়েছে।\n• সাধারণ সমস্যা ও বাগ ফিক্স করা হয়েছে।"
+        }
+
+        val lines = rawBody.lines()
+        val cleanList = mutableListOf<String>()
+
+        for (line in lines) {
+            val trimmed = line.trim()
+            if (trimmed.isBlank()) continue
+
+            val lower = trimmed.lowercase()
+            if (lower.contains("commit:") ||
+                lower.contains("message:") ||
+                lower.contains("update appupdatemanager") ||
+                lower.contains("update build.gradle") ||
+                lower.contains("new release v") ||
+                trimmed.matches(Regex("(?i).*([0-9a-f]{7,40}).*")) ||
+                trimmed.startsWith("#")
+            ) {
+                continue
+            }
+
+            val cleanLine = trimmed
+                .replace("**", "")
+                .replace("*", "")
+                .replace("`", "")
+                .trim()
+
+            if (cleanLine.isNotBlank()) {
+                if (!cleanLine.startsWith("•") && !cleanLine.startsWith("-")) {
+                    cleanList.add("• $cleanLine")
+                } else {
+                    cleanList.add(cleanLine)
+                }
+            }
+        }
+
+        if (cleanList.isEmpty()) {
+            return "• অ্যাপের নতুন ফিচার ও বিভিন্ন উন্নতি অন্তর্ভুক্ত করা হয়েছে।\n• পারফরম্যান্স ও স্থায়িত্ব বৃদ্ধি করা হয়েছে।"
+        }
+
+        return cleanList.joinToString("\n")
     }
 
     /**

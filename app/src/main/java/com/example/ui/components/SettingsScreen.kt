@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,18 +17,25 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -44,10 +54,16 @@ import com.example.ui.theme.CreamPaperBg
 import com.example.ui.theme.DarkForestGreen
 import com.example.ui.theme.ForestGreenText
 import com.example.ui.theme.MaroonHeaderColor
+import com.example.ui.theme.WarmBorderColor
+import com.example.util.QuickPreset
 
 @Composable
 fun SettingsScreen(
     state: CurrentBillState,
+    quickPresets: List<QuickPreset> = emptyList(),
+    onAddCustomPreset: (name: String, qty: String, rate: String, amount: String) -> Unit = { _, _, _, _ -> },
+    onRemovePreset: (preset: QuickPreset) -> Unit = {},
+    onResetPresetsDefault: () -> Unit = {},
     onCenterNameChange: (String) -> Unit,
     onSubtitleChange: (String) -> Unit,
     onPurchaserLabelChange: (String) -> Unit = {},
@@ -62,6 +78,18 @@ fun SettingsScreen(
     val focusCenterName = remember { FocusRequester() }
     val focusSubtitle = remember { FocusRequester() }
     val focusPurchaserLabel = remember { FocusRequester() }
+
+    val signatureOptions = listOf("স্বাক্ষর", "ক্রয়কারীর স্বাক্ষর", "অনুমোদনকারীর স্বাক্ষর")
+    val customOption = "কাস্টম..."
+
+    val initialIsPreset = state.purchaserLabel in signatureOptions
+    var selectedSignatureOption by remember(state.purchaserLabel) {
+        mutableStateOf(if (initialIsPreset) state.purchaserLabel else if (state.purchaserLabel.isBlank()) "স্বাক্ষর" else customOption)
+    }
+    var customSignatureText by remember(state.purchaserLabel) {
+        mutableStateOf(if (initialIsPreset) "" else state.purchaserLabel)
+    }
+    var expandedSignatureDropdown by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -130,36 +158,132 @@ fun SettingsScreen(
                         focusedBorderColor = DarkForestGreen
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { focusPurchaserLabel.requestFocus() }),
+                    keyboardActions = KeyboardActions(onNext = { expandedSignatureDropdown = true }),
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusSubtitle)
                         .testTag("subtitle_setting_input")
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                OutlinedTextField(
-                    value = state.purchaserLabel,
-                    onValueChange = onPurchaserLabelChange,
-                    label = { Text("স্বাক্ষরের টাইটেল (যেমন: ক্রেতার স্বাক্ষর / ক্রয়কারীর স্বাক্ষর)") },
-                    singleLine = true,
-                    textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 15.sp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
-                        focusedBorderColor = DarkForestGreen
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = {
-                        focusManager.clearFocus()
-                        keyboardController?.hide()
-                    }),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusPurchaserLabel)
-                        .testTag("purchaser_label_setting_input")
+                Text(
+                    text = "স্বাক্ষরের শিরোনাম নির্বাচন:",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkForestGreen
                 )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = selectedSignatureOption,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("স্বাক্ষরের টাইটেল অপশন") },
+                        trailingIcon = {
+                            Text(
+                                text = "▾",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = DarkForestGreen,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                        },
+                        singleLine = true,
+                        textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 15.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedBorderColor = DarkForestGreen
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("signature_title_dropdown")
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { expandedSignatureDropdown = true }
+                    )
+
+                    DropdownMenu(
+                        expanded = expandedSignatureDropdown,
+                        onDismissRequest = { expandedSignatureDropdown = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.85f)
+                            .background(CreamPaperBg)
+                    ) {
+                        signatureOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = option,
+                                        fontSize = 14.sp,
+                                        fontWeight = if (selectedSignatureOption == option) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (selectedSignatureOption == option) DarkForestGreen else Color.Black
+                                    )
+                                },
+                                onClick = {
+                                    selectedSignatureOption = option
+                                    expandedSignatureDropdown = false
+                                    onPurchaserLabelChange(option)
+                                }
+                            )
+                        }
+
+                        Divider(color = WarmBorderColor, thickness = 0.5.dp)
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = customOption,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (selectedSignatureOption == customOption) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (selectedSignatureOption == customOption) DarkForestGreen else Color.Black
+                                )
+                            },
+                            onClick = {
+                                selectedSignatureOption = customOption
+                                expandedSignatureDropdown = false
+                                if (customSignatureText.isNotBlank()) {
+                                    onPurchaserLabelChange(customSignatureText)
+                                }
+                            }
+                        )
+                    }
+                }
+
+                if (selectedSignatureOption == customOption) {
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = customSignatureText,
+                        onValueChange = { newText ->
+                            customSignatureText = newText
+                            onPurchaserLabelChange(newText)
+                        },
+                        label = { Text("কাস্টম স্বাক্ষরের শিরোনাম লিখুন") },
+                        singleLine = true,
+                        textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 15.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedBorderColor = DarkForestGreen
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        }),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusPurchaserLabel)
+                            .testTag("purchaser_label_setting_input")
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -167,7 +291,8 @@ fun SettingsScreen(
                     onClick = {
                         focusManager.clearFocus()
                         keyboardController?.hide()
-                        onSaveSettings(state.centerName, state.subtitle, state.purchaserLabel)
+                        val finalLabel = if (selectedSignatureOption == customOption) customSignatureText.trim() else selectedSignatureOption
+                        onSaveSettings(state.centerName, state.subtitle, finalLabel)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen, contentColor = Color.White),
                     shape = RoundedCornerShape(8.dp),
@@ -207,7 +332,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "রিসেট চাপলে সমস্ত সেভ করা তথ্য ও প্রিসেট মুছে গিয়ে অ্যাপ সম্পূর্ণ খালি অবস্থায় ফিরে যাবে। কোনো ডিফল্ট ডাটা আসবে না।",
+                    text = "রিসেট চাপলে সমস্ত সেভ করা তথ্য ও প্রিসেট মুছে গিয়ে অ্যাপ সম্পূর্ণ খালি অবস্থায় ফিরে যাবে। কোনো ডিফল্ট ডাটা আসবে না।",
                     fontSize = 13.sp,
                     color = Color.DarkGray
                 )

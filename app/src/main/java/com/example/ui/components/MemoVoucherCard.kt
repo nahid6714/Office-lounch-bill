@@ -72,12 +72,23 @@ import com.example.ui.theme.LightForestGreen
 import com.example.ui.theme.WarmBorderColor
 import com.example.util.BengaliUtils
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Button
+import com.example.util.QuickPreset
+
 val MaroonHeaderColor = DarkForestGreen
 val MaroonTextColor = ForestGreenText
 
 @Composable
 fun MemoVoucherCard(
     state: CurrentBillState,
+    quickPresets: List<QuickPreset> = emptyList(),
+    onPresetClick: (name: String, qty: String, rate: String, amount: String) -> Unit = { _, _, _, _ -> },
+    onAddCustomPreset: (name: String, qty: String, rate: String, amount: String) -> Unit = { _, _, _, _ -> },
+    onRemovePreset: (preset: QuickPreset) -> Unit = {},
+    onResetDefaults: () -> Unit = {},
     onUpdateDateClick: () -> Unit,
     onUpdateItemName: (id: String, name: String) -> Unit,
     onUpdateItemQty: (id: String, qty: String) -> Unit,
@@ -90,6 +101,8 @@ fun MemoVoucherCard(
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    var showManagePresetsDialog by remember { mutableStateOf(false) }
 
     val itemFocusRequesters = remember(state.items.size) {
         List(state.items.size) {
@@ -196,7 +209,68 @@ fun MemoVoucherCard(
                 }
 
                 Divider(color = WarmBorderColor, thickness = 1.dp)
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Action Buttons Row (Left: নতুন আইটেম যোগ করুন, Right: দ্রুত আইটেম যোগ করুন)
+                val canAddItem = state.items.size < 18
+                val addedItemNames = remember(state.items) {
+                    state.items.map { it.name.trim() }.filter { it.isNotBlank() }.toSet()
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Left: "নতুন আইটেম যোগ করুন"
+                    OutlinedButton(
+                        onClick = onAddItemRow,
+                        enabled = canAddItem,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("add_item_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = DarkForestGreen
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = DarkForestGreen,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (canAddItem) "নতুন আইটেম যোগ করুন" else "সর্বোচ্চ ১৮ টি",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = DarkForestGreen
+                        )
+                    }
+
+                    // Right: "দ্রুত আইটেম যোগ করুন"
+                    QuickItemSelectorButton(
+                        presets = quickPresets,
+                        addedItemNames = addedItemNames,
+                        onPresetClick = onPresetClick,
+                        onManagePresetsClick = { showManagePresetsDialog = true },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (showManagePresetsDialog) {
+                    ManageQuickPresetsDialog(
+                        presets = quickPresets,
+                        onDismiss = { showManagePresetsDialog = false },
+                        onAddPreset = onAddCustomPreset,
+                        onRemovePreset = onRemovePreset,
+                        onResetDefaults = onResetDefaults
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Table Header Row
                 Row(
@@ -276,31 +350,6 @@ fun MemoVoucherCard(
                         onRemove = { onRemoveItem(item.id) }
                     )
                     Divider(color = Color(0xFFECE3D8), thickness = 0.5.dp)
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // + Add Item Button
-                val canAddItem = state.items.size < 18
-                OutlinedButton(
-                    onClick = onAddItemRow,
-                    enabled = canAddItem,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("add_item_button"),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = DarkForestGreen
-                    )
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = DarkForestGreen)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (canAddItem) "+ নতুন আইটেম যোগ করুন" else "সর্বোচ্চ ১৮ টি আইটেম সীমাবদ্ধ",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkForestGreen
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -714,6 +763,139 @@ fun SawtoothDivider() {
                 .height(1.dp)
                 .background(LedgerRed)
         )
+    }
+}
+
+@Composable
+fun QuickItemSelectorButton(
+    presets: List<QuickPreset>,
+    addedItemNames: Set<String>,
+    onPresetClick: (name: String, qty: String, rate: String, amount: String) -> Unit,
+    onManagePresetsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expandedDropdown by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        Button(
+            onClick = { expandedDropdown = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .testTag("quick_item_select_button"),
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = DarkForestGreen,
+                contentColor = Color.White
+            )
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "দ্রুত আইটেম যোগ করুন ▾",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expandedDropdown,
+            onDismissRequest = { expandedDropdown = false },
+            modifier = Modifier
+                .widthIn(min = 220.dp)
+                .background(CreamPaperBg)
+        ) {
+            Text(
+                text = "— প্রিসেট থেকে দ্রুত আইটেম যোগ করুন —",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+            Divider(color = WarmBorderColor, thickness = 0.5.dp)
+
+            if (presets.isEmpty()) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = "কোনো প্রিসেট আইটেম নেই",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    },
+                    onClick = { }
+                )
+            } else {
+                presets.forEach { preset ->
+                    val isAdded = addedItemNames.contains(preset.name.trim())
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = preset.name,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isAdded) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isAdded) ForestGreenText else Color.Black
+                                )
+                                if (preset.defaultRate.isNotBlank()) {
+                                    Text(
+                                        text = "৳${BengaliUtils.toBengaliDigits(preset.defaultRate)}",
+                                        fontSize = 11.sp,
+                                        color = BrassAccent,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(start = 6.dp)
+                                    )
+                                }
+                            }
+                        },
+                        trailingIcon = {
+                            if (isAdded) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "যোগ করা আছে",
+                                    tint = DarkForestGreen,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        },
+                        onClick = {
+                            onPresetClick(preset.name, preset.defaultQty, preset.defaultRate, preset.defaultAmount)
+                        }
+                    )
+                }
+            }
+
+            Divider(color = WarmBorderColor, thickness = 0.5.dp)
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = "+ প্রিসেট ম্যানেজ / এডিট করুন",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkForestGreen
+                    )
+                },
+                onClick = {
+                    expandedDropdown = false
+                    onManagePresetsClick()
+                }
+            )
+        }
     }
 }
 
