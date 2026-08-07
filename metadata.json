@@ -1,6 +1,6 @@
 {
   "name": "টুলস",
-  "description": "বিভিন্ন দৈনন্দিন ও ব্যবসায়িক ডিজিটাল টুলস হাব - খাবার বিল মেমো, হিসাব সংরক্ষণ ইত্যাদি",
+  "description": "দৈনন্দিন ও ব্যবসায়িক ডিজিটাল টুলস হাব - খাবার বিল মেমো, স্মার্ট ডকুমেন্ট স্ক্যানার (NID/কার্ড), হিসাব সংরক্ষণ",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

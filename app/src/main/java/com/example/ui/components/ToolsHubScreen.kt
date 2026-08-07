@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ReceiptLong
@@ -65,6 +66,7 @@ data class AppToolItem(
 @Composable
 fun ToolsHubScreen(
     onSelectFoodBillTool: () -> Unit,
+    onSelectDocScannerTool: () -> Unit = {},
     onSelectUpcomingTool: (title: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -74,6 +76,15 @@ fun ToolsHubScreen(
             title = "খাবার বিল মেমো",
             subtitle = "দৈনিক খাবার বাজার বিল তৈরি, প্রিন্ট ও হিসাব সংরক্ষণ করুন",
             icon = Icons.Default.Restaurant,
+            isAvailable = true,
+            badgeText = "চালু আছে",
+            accentColor = DarkForestGreen
+        ),
+        AppToolItem(
+            id = "doc_scanner",
+            title = "ডকুমেন্ট স্ক্যানার (NID/কার্ড)",
+            subtitle = "NID, আইডি কার্ড বা যেকোনো কাগজ স্মার্টলি স্ক্যান, ক্রপ ও ফিল্টার করুন",
+            icon = Icons.Default.DocumentScanner,
             isAvailable = true,
             badgeText = "চালু আছে",
             accentColor = DarkForestGreen
@@ -169,10 +180,10 @@ fun ToolsHubScreen(
             ToolCardItem(
                 tool = tool,
                 onClick = {
-                    if (tool.id == "food_bill") {
-                        onSelectFoodBillTool()
-                    } else {
-                        onSelectUpcomingTool(tool.title)
+                    when (tool.id) {
+                        "food_bill" -> onSelectFoodBillTool()
+                        "doc_scanner" -> onSelectDocScannerTool()
+                        else -> onSelectUpcomingTool(tool.title)
                     }
                 }
             )

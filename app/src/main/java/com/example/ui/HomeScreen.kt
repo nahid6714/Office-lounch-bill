@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Print
@@ -63,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.AppSplashScreen
 import com.example.ui.components.BillHistoryList
+import com.example.ui.components.DocumentScannerScreen
 import com.example.ui.components.MemoVoucherCard
 import com.example.ui.components.QuickPresetChips
 import com.example.ui.components.SettingsScreen
@@ -91,7 +93,7 @@ fun HomeScreen(
     val quickPresets by viewModel.quickPresets.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
-    var selectedTool by remember { mutableStateOf<String?>("food_bill") }
+    var selectedTool by remember { mutableStateOf<String?>(null) }
     var selectedTab by remember { mutableIntStateOf(0) }
     var showPreviewDialog by remember { mutableStateOf(false) }
     var isSplashLoading by remember { mutableStateOf(true) }
@@ -148,10 +150,15 @@ fun HomeScreen(
                     TopAppBar(
                         title = {
                             Text(
-                                text = if (selectedTool == "food_bill") {
-                                    if (currentBillState.centerName.isNotBlank()) "খাবার বিল - " + currentBillState.centerName
-                                    else "আল বারাকা খাবার বিল"
-                                } else "টুলস",
+                                text = when (selectedTool) {
+                                    "food_bill" -> when (selectedTab) {
+                                        1 -> "সংরক্ষিত হিসাব"
+                                        2 -> "মেমো সেটিংস"
+                                        else -> if (currentBillState.centerName.isNotBlank()) "খাবার বিল - " + currentBillState.centerName else "আল বারাকা খাবার বিল"
+                                    }
+                                    "doc_scanner" -> "ডকুমেন্ট স্ক্যানার"
+                                    else -> "ডিজিটাল টুলস হাব"
+                                },
                                 fontFamily = HeadingFontFamily,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 19.sp
@@ -239,7 +246,13 @@ fun HomeScreen(
                 ) {
                     if (selectedTool == null) {
                         ToolsHubScreen(
-                            onSelectFoodBillTool = { selectedTool = "food_bill" },
+                            onSelectFoodBillTool = {
+                                selectedTool = "food_bill"
+                                selectedTab = 0
+                            },
+                            onSelectDocScannerTool = {
+                                selectedTool = "doc_scanner"
+                            },
                             onSelectUpcomingTool = { toolTitle ->
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar("'$toolTitle' টুলটি খুব শীঘ্রই যোগ করা হচ্ছে!")
@@ -420,6 +433,14 @@ fun HomeScreen(
                                 )
                             }
                         }
+                    } else if (selectedTool == "doc_scanner") {
+                        DocumentScannerScreen(
+                            onShowSnackbar = { msg ->
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(msg)
+                                }
+                            }
+                        )
                     }
                 }
             }
