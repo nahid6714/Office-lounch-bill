@@ -50,6 +50,30 @@ object BengaliUtils {
         return parseBengaliNumber(input).toInt()
     }
 
+    fun formatPresetDisplayText(preset: QuickPreset): String {
+        val name = preset.name.trim()
+        val qty = preset.defaultQty.trim()
+        val priceRaw = preset.defaultRate.ifBlank { preset.defaultAmount }.trim()
+
+        val qtyFormatted = if (qty.isNotBlank()) toBengaliDigits(qty) else ""
+        val priceFormatted = if (priceRaw.isNotBlank()) {
+            "টাকা: ${toBengaliDigits(priceRaw)}৳"
+        } else ""
+
+        val infoPart = when {
+            qtyFormatted.isNotBlank() && priceFormatted.isNotBlank() -> "$qtyFormatted | $priceFormatted"
+            qtyFormatted.isNotBlank() -> qtyFormatted
+            priceFormatted.isNotBlank() -> priceFormatted
+            else -> ""
+        }
+
+        return if (infoPart.isNotBlank()) {
+            "$name ($infoPart)"
+        } else {
+            name
+        }
+    }
+
     val defaultQuickPresets = emptyList<QuickPreset>()
 }
 

@@ -147,6 +147,7 @@ fun QuickPresetChips(
 
                     presets.forEach { preset ->
                         val isAdded = addedItemNames.contains(preset.name.trim())
+                        val formattedText = BengaliUtils.formatPresetDisplayText(preset)
                         DropdownMenuItem(
                             text = {
                                 Row(
@@ -155,29 +156,19 @@ fun QuickPresetChips(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = preset.name,
-                                        fontSize = 14.sp,
+                                        text = formattedText,
+                                        fontSize = 13.sp,
                                         fontWeight = if (isAdded) FontWeight.Bold else FontWeight.Medium,
                                         color = if (isAdded) ForestGreenText else Color.Black
                                     )
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if (preset.defaultRate.isNotBlank()) {
-                                            Text(
-                                                text = "৳${BengaliUtils.toBengaliDigits(preset.defaultRate)}",
-                                                fontSize = 12.sp,
-                                                color = BrassAccent,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                        }
-                                        if (isAdded) {
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "(বাদ দিন)",
-                                                fontSize = 10.sp,
-                                                color = LedgerRed,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
+                                    if (isAdded) {
+                                        Text(
+                                            text = "(বাদ দিন)",
+                                            fontSize = 10.sp,
+                                            color = LedgerRed,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(start = 4.dp)
+                                        )
                                     }
                                 }
                             },
