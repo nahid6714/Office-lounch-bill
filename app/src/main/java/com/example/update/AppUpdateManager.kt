@@ -27,25 +27,56 @@ class AppUpdateManager(
      * Silent fallback on network/API failure - will never throw or crash the UI.
      */
     suspend fun checkForUpdate(context: Context): UpdateInfo = withContext(Dispatchers.IO) {
+        val currentVersionName = BuildConfig.VERSION_NAME
+        val currentVersionCode = BuildConfig.VERSION_CODE
+
         try {
             val url = URL(apiUrl)
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
-                connectTimeout = 8000
-                readTimeout = 8000
+                connectTimeout = 10000
+                readTimeout = 10000
+                useCaches = false
+                defaultUseCaches = false
                 setRequestProperty("Accept", "application/vnd.github.v3+json")
                 setRequestProperty("User-Agent", "AndroidAppUpdater")
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+                setRequestProperty("Expires", "0")
             }
 
-            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+            val responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_OK) {
                 val jsonStr = connection.inputStream.bufferedReader().use { it.readText() }
                 val json = JSONObject(jsonStr)
 
-                val tagName = json.optString("tag_name", "").removePrefix("v").trim()
+                val rawTagName = json.optString("tag_name", "").trim()
+                val tagName = rawTagName.removePrefix("v").trim()
+                val releaseTitle = json.optString("name", "").trim()
                 val rawNotes = json.optString("body", "").trim()
                 val cleanNotes = sanitizeReleaseNotes(rawNotes)
                 val rawPublishedAt = json.optString("published_at", "")
                 val formattedDate = formatReleaseDate(rawPublishedAt)
+
+                // Try to parse remote versionCode from release notes body, release name, or tag name
+                var remoteVersionCode = 0
+                val codeRegex = Regex("(?i)(?:versionCode|code|build)\\s*[:=]?\\s*(\\d+)")
+                val bodyCodeMatch = codeRegex.find(rawNotes)
+                if (bodyCodeMatch != null) {
+                    remoteVersionCode = bodyCodeMatch.groupValues[1].toIntOrNull() ?: 0
+                }
+                if (remoteVersionCode == 0) {
+                    val titleCodeMatch = codeRegex.find(releaseTitle)
+                    if (titleCodeMatch != null) {
+                        remoteVersionCode = titleCodeMatch.groupValues[1].toIntOrNull() ?: 0
+                    }
+                }
+                if (remoteVersionCode == 0) {
+                    val tagPlusMatch = Regex("\\+(\\d+)").find(rawTagName)
+                    if (tagPlusMatch != null) {
+                        remoteVersionCode = tagPlusMatch.groupValues[1].toIntOrNull() ?: 0
+                    }
+                }
 
                 var downloadUrl = ""
                 var apkSizeBytes = 0L
@@ -63,30 +94,75 @@ class AppUpdateManager(
                 }
 
                 val formattedSize = formatFileSize(apkSizeBytes)
-                val currentVersionName = BuildConfig.VERSION_NAME
-                val currentVersionCode = BuildConfig.VERSION_CODE
+                val isNewer = isVersionNewer(
+                    remoteTag = tagName,
+                    remoteVersionCode = remoteVersionCode,
+                    currentVersionName = currentVersionName,
+                    currentVersionCode = currentVersionCode
+                )
 
-                val isNewer = isVersionNewer(tagName, currentVersionName, currentVersionCode)
-
-                if (isNewer && downloadUrl.isNotBlank()) {
-                    return@withContext UpdateInfo(
-                        hasUpdate = true,
-                        latestVersionName = tagName,
-                        releaseNotes = cleanNotes,
-                        downloadUrl = downloadUrl,
-                        currentVersionName = currentVersionName,
-                        publishedAt = formattedDate,
-                        apkSizeFormatted = formattedSize
-                    )
+                if (isNewer) {
+                    if (downloadUrl.isNotBlank()) {
+                        return@withContext UpdateInfo(
+                            hasUpdate = true,
+                            latestVersionName = tagName.ifBlank { rawTagName },
+                            latestVersionCode = remoteVersionCode,
+                            releaseNotes = cleanNotes,
+                            downloadUrl = downloadUrl,
+                            currentVersionName = currentVersionName,
+                            publishedAt = formattedDate,
+                            apkSizeFormatted = formattedSize
+                        )
+                    } else {
+                        return@withContext UpdateInfo(
+                            hasUpdate = false,
+                            currentVersionName = currentVersionName,
+                            errorMessage = "নতুন সংস্করণ (${tagName}) সনাক্ত হয়েছে, কিন্তু GitHub-এ কোনো APK ফাইল পাওয়া যায়নি।"
+                        )
+                    }
                 }
+            } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                return@withContext UpdateInfo(
+                    hasUpdate = false,
+                    currentVersionName = currentVersionName,
+                    errorMessage = "GitHub রিপ্রোজিটরি অথবা Release পাওয়া যায়নি (HTTP 404)।"
+                )
+            } else if (responseCode == 403) {
+                return@withContext UpdateInfo(
+                    hasUpdate = false,
+                    currentVersionName = currentVersionName,
+                    errorMessage = "GitHub API লিমিট শেষ হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন (HTTP 403)।"
+                )
+            } else {
+                return@withContext UpdateInfo(
+                    hasUpdate = false,
+                    currentVersionName = currentVersionName,
+                    errorMessage = "GitHub API রেসপন্স ত্রুটি: HTTP $responseCode"
+                )
             }
+        } catch (e: java.net.UnknownHostException) {
+            return@withContext UpdateInfo(
+                hasUpdate = false,
+                currentVersionName = currentVersionName,
+                errorMessage = "ইন্টারনেট সংযোগ নেই। ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।"
+            )
+        } catch (e: java.net.SocketTimeoutException) {
+            return@withContext UpdateInfo(
+                hasUpdate = false,
+                currentVersionName = currentVersionName,
+                errorMessage = "GitHub সার্ভার সাড়া দিতে সময় নিচ্ছে (Timeout)। পরে আবার চেষ্টা করুন।"
+            )
         } catch (e: Exception) {
-            // Silently ignore errors on failure
+            return@withContext UpdateInfo(
+                hasUpdate = false,
+                currentVersionName = currentVersionName,
+                errorMessage = "আপডেট চেক করার সময় সমস্যা হয়েছে: ${e.localizedMessage ?: "অজানা ত্রুটি"}"
+            )
         }
 
         return@withContext UpdateInfo(
             hasUpdate = false,
-            currentVersionName = BuildConfig.VERSION_NAME
+            currentVersionName = currentVersionName
         )
     }
 
@@ -117,14 +193,31 @@ class AppUpdateManager(
     }
 
     /**
-     * Compares remote release tag with current version to check if an update is available.
+     * Compares remote release tag and version code with current version to check if an update is available.
      */
-    private fun isVersionNewer(remoteTag: String, currentVersionName: String, currentVersionCode: Int): Boolean {
+    private fun isVersionNewer(
+        remoteTag: String,
+        remoteVersionCode: Int,
+        currentVersionName: String,
+        currentVersionCode: Int
+    ): Boolean {
+        // 1. If remoteVersionCode was explicitly parsed and is greater than local versionCode
+        if (remoteVersionCode > 0 && remoteVersionCode > currentVersionCode) {
+            return true
+        }
+        // 2. If remoteVersionCode was explicitly parsed and is <= local versionCode
+        if (remoteVersionCode > 0 && remoteVersionCode <= currentVersionCode) {
+            return false
+        }
+
         if (remoteTag.isBlank()) return false
 
+        val remoteClean = remoteTag.removePrefix("v").trim()
+        val localClean = currentVersionName.removePrefix("v").trim()
+
         // Parse versions into numeric components (e.g. "1.0.5" -> [1, 0, 5])
-        val remoteParts = remoteTag.split(".").mapNotNull { it.filter { c -> c.isDigit() }.toIntOrNull() }
-        val localParts = currentVersionName.split(".").mapNotNull { it.filter { c -> c.isDigit() }.toIntOrNull() }
+        val remoteParts = remoteClean.split(".").mapNotNull { it.filter { c -> c.isDigit() }.toIntOrNull() }
+        val localParts = localClean.split(".").mapNotNull { it.filter { c -> c.isDigit() }.toIntOrNull() }
 
         if (remoteParts.isNotEmpty() && localParts.isNotEmpty()) {
             val maxLen = maxOf(remoteParts.size, localParts.size)
@@ -137,7 +230,7 @@ class AppUpdateManager(
             return false
         }
 
-        return remoteTag != currentVersionName
+        return remoteClean != localClean && remoteClean.isNotBlank()
     }
 
     /**

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
@@ -333,6 +334,7 @@ fun SettingsScreen(
         val updateManager = remember { AppUpdateManager() }
         var isCheckingUpdate by remember { mutableStateOf(false) }
         var noUpdateMessage by remember { mutableStateOf<String?>(null) }
+        var updateErrorMessage by remember { mutableStateOf<String?>(null) }
         var updateInfoToShow by remember { mutableStateOf<UpdateInfo?>(null) }
 
         Card(
@@ -391,15 +393,46 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
+                if (updateErrorMessage != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = Color(0xFFC62828),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = updateErrorMessage!!,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFFC62828)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 Button(
                     onClick = {
                         if (!isCheckingUpdate) {
                             isCheckingUpdate = true
                             noUpdateMessage = null
+                            updateErrorMessage = null
                             coroutineScope.launch {
                                 val info = updateManager.checkForUpdate(context)
                                 isCheckingUpdate = false
-                                if (info.hasUpdate) {
+                                if (info.errorMessage != null) {
+                                    updateErrorMessage = info.errorMessage
+                                } else if (info.hasUpdate) {
                                     updateInfoToShow = info
                                 } else {
                                     noUpdateMessage = "আপনি সর্বশেষ সংস্করণ ব্যবহার করছেন।"
