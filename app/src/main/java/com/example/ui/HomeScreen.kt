@@ -93,6 +93,10 @@ fun HomeScreen(
     val historyBills by viewModel.historyBills.collectAsStateWithLifecycle()
     val quickPresets by viewModel.quickPresets.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val appLanguage by viewModel.appLanguage.collectAsStateWithLifecycle()
+
+    val isEn = appLanguage == "en"
 
     var selectedTool by remember { mutableStateOf<String?>(null) }
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -157,14 +161,17 @@ fun HomeScreen(
                         title = {
                             Text(
                                 text = when {
-                                    showGlobalSettings -> "অ্যাপ সেটিংস"
+                                    showGlobalSettings -> if (isEn) "Main App Settings" else "মেইন অ্যাপ সেটিংস"
                                     selectedTool == "food_bill" -> when (selectedTab) {
-                                        1 -> "সংরক্ষিত হিসাব"
-                                        2 -> "মেমো সেটিংস"
-                                        else -> if (currentBillState.centerName.isNotBlank()) "খাবার বিল - " + currentBillState.centerName else "আল বারাকা খাবার বিল"
+                                        1 -> if (isEn) "Saved Records" else "সংরক্ষিত হিসাব"
+                                        2 -> if (isEn) "Memo Settings" else "মেমো সেটিংস"
+                                        else -> if (currentBillState.centerName.isNotBlank())
+                                            (if (isEn) "Food Bill - " else "খাবার বিল - ") + currentBillState.centerName
+                                        else
+                                            (if (isEn) "Food Bill Memo" else "আল বারাকা খাবার বিল")
                                     }
-                                    selectedTool == "doc_scanner" -> "ডকুমেন্ট স্ক্যানার"
-                                    else -> "ডিজিটাল টুলস হাব"
+                                    selectedTool == "doc_scanner" -> if (isEn) "Document Scanner" else "ডকুমেন্ট স্ক্যানার"
+                                    else -> if (isEn) "Digital Tools Hub" else "ডিজিটাল টুলস হাব"
                                 },
                                 fontFamily = HeadingFontFamily,
                                 fontWeight = FontWeight.Bold,
@@ -219,8 +226,8 @@ fun HomeScreen(
                             NavigationBarItem(
                                 selected = selectedTab == 0,
                                 onClick = { selectedTab = 0 },
-                                icon = { Icon(Icons.Default.Edit, contentDescription = "দৈনিক বিল") },
-                                label = { Text("দৈনিক বিল", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                                icon = { Icon(Icons.Default.Edit, contentDescription = if (isEn) "Daily Bill" else "দৈনিক বিল") },
+                                label = { Text(if (isEn) "Daily Bill" else "দৈনিক বিল", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = Color.White,
                                     selectedTextColor = DarkForestGreen,
@@ -234,8 +241,8 @@ fun HomeScreen(
                             NavigationBarItem(
                                 selected = selectedTab == 1,
                                 onClick = { selectedTab = 1 },
-                                icon = { Icon(Icons.Default.History, contentDescription = "সংরক্ষিত হিসাব") },
-                                label = { Text("সংরক্ষিত হিসাব", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                                icon = { Icon(Icons.Default.History, contentDescription = if (isEn) "Saved Records" else "সংরক্ষিত হিসাব") },
+                                label = { Text(if (isEn) "Saved Records" else "সংরক্ষিত হিসাব", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = Color.White,
                                     selectedTextColor = DarkForestGreen,
@@ -249,8 +256,8 @@ fun HomeScreen(
                             NavigationBarItem(
                                 selected = selectedTab == 2,
                                 onClick = { selectedTab = 2 },
-                                icon = { Icon(Icons.Default.Settings, contentDescription = "সেটিংস") },
-                                label = { Text("সেটিংস", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                                icon = { Icon(Icons.Default.Settings, contentDescription = if (isEn) "Memo Settings" else "মেমো সেটিংস") },
+                                label = { Text(if (isEn) "Memo Settings" else "মেমো সেটিংস", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = Color.White,
                                     selectedTextColor = DarkForestGreen,
@@ -272,9 +279,15 @@ fun HomeScreen(
                         .background(Color(0xFFFBF8F3))
                 ) {
                     if (showGlobalSettings) {
-                        GlobalSettingsScreen()
+                        GlobalSettingsScreen(
+                            themeMode = themeMode,
+                            appLanguage = appLanguage,
+                            onThemeModeChange = { mode -> viewModel.setThemeMode(mode) },
+                            onLanguageChange = { lang -> viewModel.setAppLanguage(lang) }
+                        )
                     } else if (selectedTool == null) {
                         ToolsHubScreen(
+                            appLanguage = appLanguage,
                             onSelectFoodBillTool = {
                                 selectedTool = "food_bill"
                                 selectedTab = 0
@@ -282,9 +295,14 @@ fun HomeScreen(
                             onSelectDocScannerTool = {
                                 selectedTool = "doc_scanner"
                             },
+                            onSelectAppSettings = {
+                                showGlobalSettings = true
+                            },
                             onSelectUpcomingTool = { toolTitle ->
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("'$toolTitle' টুলটি খুব শীঘ্রই যোগ করা হচ্ছে!")
+                                    snackbarHostState.showSnackbar(
+                                        if (isEn) "'$toolTitle' tool will be added soon!" else "'$toolTitle' টুলটি খুব শীঘ্রই যোগ করা হচ্ছে!"
+                                    )
                                 }
                             }
                         )

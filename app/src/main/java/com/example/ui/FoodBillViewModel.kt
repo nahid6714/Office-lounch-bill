@@ -50,6 +50,34 @@ class FoodBillViewModel(application: Application) : AndroidViewModel(application
 
     private val prefs = application.getSharedPreferences("food_bill_prefs", android.content.Context.MODE_PRIVATE)
 
+    private val _themeMode = MutableStateFlow(prefs.getString("app_theme_mode", "system") ?: "system")
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
+
+    private val _appLanguage = MutableStateFlow(prefs.getString("app_language", "bn") ?: "bn")
+    val appLanguage: StateFlow<String> = _appLanguage.asStateFlow()
+
+    fun setThemeMode(mode: String) {
+        _themeMode.value = mode
+        prefs.edit().putString("app_theme_mode", mode).apply()
+        viewModelScope.launch {
+            val msg = when (mode) {
+                "dark" -> if (_appLanguage.value == "en") "Dark mode activated" else "ডার্ক মোড চালু করা হয়েছে"
+                "light" -> if (_appLanguage.value == "en") "Light mode activated" else "লাইট মোড চালু করা হয়েছে"
+                else -> if (_appLanguage.value == "en") "System theme activated" else "সিস্টেম থিম নির্বাচন করা হয়েছে"
+            }
+            _uiEvent.emit(msg)
+        }
+    }
+
+    fun setAppLanguage(lang: String) {
+        _appLanguage.value = lang
+        prefs.edit().putString("app_language", lang).apply()
+        viewModelScope.launch {
+            val msg = if (lang == "en") "Language set to English" else "ভাষা বাংলায় পরিবর্তন করা হয়েছে"
+            _uiEvent.emit(msg)
+        }
+    }
+
     init {
         // Load Quick Presets from SharedPreferences
         loadQuickPresets()

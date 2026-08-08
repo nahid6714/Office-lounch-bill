@@ -5,9 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.FoodBillViewModel
 import com.example.ui.HomeScreen
 import com.example.ui.theme.MyApplicationTheme
+import androidx.compose.runtime.getValue
 
 class MainActivity : ComponentActivity() {
 
@@ -17,7 +19,8 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      MyApplicationTheme {
+      val themeMode by foodBillViewModel.themeMode.collectAsStateWithLifecycle()
+      MyApplicationTheme(themeMode = themeMode) {
         HomeScreen(viewModel = foodBillViewModel)
       }
     }

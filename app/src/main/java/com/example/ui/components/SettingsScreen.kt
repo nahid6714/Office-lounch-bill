@@ -114,7 +114,7 @@ fun SettingsScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = "ক্যাশ মেমো ও অ্যাপ সেটিংস",
+            text = "ক্যাশ মেমো হেডার সেটিংস",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = ForestGreenText

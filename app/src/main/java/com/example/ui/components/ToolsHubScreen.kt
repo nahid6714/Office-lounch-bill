@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -65,28 +66,41 @@ data class AppToolItem(
 
 @Composable
 fun ToolsHubScreen(
+    appLanguage: String = "bn",
     onSelectFoodBillTool: () -> Unit,
     onSelectDocScannerTool: () -> Unit = {},
+    onSelectAppSettings: () -> Unit = {},
     onSelectUpcomingTool: (title: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isEn = appLanguage == "en"
+
     val toolsList = listOf(
         AppToolItem(
             id = "food_bill",
-            title = "খাবার বিল মেমো",
-            subtitle = "দৈনিক খাবার বাজার বিল তৈরি, প্রিন্ট ও হিসাব সংরক্ষণ করুন",
+            title = if (isEn) "Food Bill Memo" else "খাবার বিল মেমো",
+            subtitle = if (isEn) "Create, print and save daily grocery bill memos" else "দৈনিক খাবার বাজার বিল তৈরি, প্রিন্ট ও হিসাব সংরক্ষণ করুন",
             icon = Icons.Default.Restaurant,
             isAvailable = true,
-            badgeText = "চালু আছে",
+            badgeText = if (isEn) "Active" else "চালু আছে",
             accentColor = DarkForestGreen
         ),
         AppToolItem(
             id = "doc_scanner",
-            title = "ডকুমেন্ট স্ক্যানার (NID/কার্ড)",
-            subtitle = "NID, আইডি কার্ড বা যেকোনো কাগজ স্মার্টলি স্ক্যান, ক্রপ ও ফিল্টার করুন",
+            title = if (isEn) "Document Scanner (NID/Card)" else "ডকুমেন্ট স্ক্যানার (NID/কার্ড)",
+            subtitle = if (isEn) "Smartly scan, crop and filter NID, ID card or documents" else "NID, আইডি কার্ড বা যেকোনো কাগজ স্মার্টলি স্ক্যান, ক্রপ ও ফিল্টার করুন",
             icon = Icons.Default.DocumentScanner,
             isAvailable = true,
-            badgeText = "চালু আছে",
+            badgeText = if (isEn) "Active" else "চালু আছে",
+            accentColor = DarkForestGreen
+        ),
+        AppToolItem(
+            id = "app_settings",
+            title = if (isEn) "Main App Settings" else "মেইন অ্যাপ সেটিংস",
+            subtitle = if (isEn) "Configure theme mode, language, app updates & permissions" else "অ্যাপ থিম মোড, ভাষা, আপডেট ও পারমিশনস নিয়ন্ত্রণ করুন",
+            icon = Icons.Default.Settings,
+            isAvailable = true,
+            badgeText = if (isEn) "Settings" else "সেটিংস",
             accentColor = DarkForestGreen
         )
     )
@@ -133,14 +147,14 @@ fun ToolsHubScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "ডিজিটাল টুলস হাব",
+                            text = if (isEn) "Digital Tools Hub" else "ডিজিটাল টুলস হাব",
                             fontFamily = HeadingFontFamily,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
-                            text = "আপনার প্রয়োজনীয় সকল টুলস এক জায়গায়",
+                            text = if (isEn) "All your essential tools in one place" else "আপনার প্রয়োজনীয় সকল টুলস এক জায়গায়",
                             fontSize = 13.sp,
                             color = Color(0xFFE2D6C5)
                         )
@@ -157,7 +171,7 @@ fun ToolsHubScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "প্রয়োজনীয় যেকোনো টুল নির্বাচন করে কাজ শুরু করুন:",
+                    text = if (isEn) "Select any required tool to start:" else "প্রয়োজনীয় যেকোনো টুল নির্বাচন করে কাজ শুরু করুন:",
                     fontSize = 13.sp,
                     color = Color(0xFFF5EBE0),
                     fontWeight = FontWeight.Medium
@@ -168,7 +182,7 @@ fun ToolsHubScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "উপলব্ধ টুলস সূচী",
+            text = if (isEn) "Available Tools Index" else "উপলব্ধ টুলস সূচী",
             fontFamily = HeadingFontFamily,
             fontSize = 17.sp,
             fontWeight = FontWeight.Bold,
@@ -183,6 +197,7 @@ fun ToolsHubScreen(
                     when (tool.id) {
                         "food_bill" -> onSelectFoodBillTool()
                         "doc_scanner" -> onSelectDocScannerTool()
+                        "app_settings" -> onSelectAppSettings()
                         else -> onSelectUpcomingTool(tool.title)
                     }
                 }
@@ -202,7 +217,7 @@ fun ToolsHubScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "💡 আরও নতুন দৈনন্দিন টুলস খুব শীঘ্রই যোগ করা হবে!",
+                text = if (isEn) "💡 More new daily tools will be added soon!" else "💡 আরও নতুন দৈনন্দিন টুলস খুব শীঘ্রই যোগ করা হবে!",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF4A3E31)

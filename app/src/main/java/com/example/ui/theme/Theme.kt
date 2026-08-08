@@ -16,7 +16,11 @@ private val DarkColorScheme = darkColorScheme(
     secondary = BrassAccent,
     tertiary = StampBlue,
     background = Color(0xFF121B17),
-    surface = Color(0xFF1E2823)
+    surface = Color(0xFF1E2823),
+    onPrimary = Color.Black,
+    onSecondary = Color.Black,
+    onBackground = Color(0xFFE2EBE6),
+    onSurface = Color(0xFFE2EBE6)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -33,10 +37,15 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: String = "system",
     dynamicColor: Boolean = false, // Keep consistent branding colors
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (themeMode) {
+        "light" -> false
+        "dark" -> true
+        else -> isSystemInDarkTheme()
+    }
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(

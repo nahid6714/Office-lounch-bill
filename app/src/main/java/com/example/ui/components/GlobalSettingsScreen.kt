@@ -84,6 +84,10 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun GlobalSettingsScreen(
+    themeMode: String = "system",
+    appLanguage: String = "bn",
+    onThemeModeChange: (String) -> Unit = {},
+    onLanguageChange: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -96,10 +100,6 @@ fun GlobalSettingsScreen(
     var updateErrorMessage by remember { mutableStateOf<String?>(null) }
     var updateInfoToShow by remember { mutableStateOf<UpdateInfo?>(null) }
 
-    // Theme & Language States
-    var selectedTheme by remember { mutableStateOf("system") } // "system", "light", "dark"
-    var selectedLanguage by remember { mutableStateOf("bn") } // "bn", "en"
-
     // Permissions check
     val hasCameraPermission = remember(context) {
         ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
@@ -111,6 +111,8 @@ fun GlobalSettingsScreen(
             ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
         }
     }
+
+    val isEn = appLanguage == "en"
 
     Column(
         modifier = modifier
@@ -141,14 +143,14 @@ fun GlobalSettingsScreen(
             Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Text(
-                    text = "অ্যাপ সেটিংস ও ব্যবস্থাপনা",
+                    text = if (isEn) "App Settings & Management" else "অ্যাপ সেটিংস ও ব্যবস্থাপনা",
                     fontFamily = HeadingFontFamily,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = DarkForestGreen
                 )
                 Text(
-                    text = "অ্যাপ আপডেট, থিম, প্রাইভেসি ও অন্যান্য কনফিগারেশন",
+                    text = if (isEn) "App update, theme, language & configurations" else "অ্যাপ আপডেট, থিম, ভাষা ও অন্যান্য কনফিগারেশন",
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
@@ -157,11 +159,14 @@ fun GlobalSettingsScreen(
 
         // 1. App Update Section
         SettingsCard(
-            title = "অ্যাপ আপডেট (App Updates)",
+            title = if (isEn) "App Updates" else "অ্যাপ আপডেট (App Updates)",
             icon = Icons.Default.SystemUpdate
         ) {
             Text(
-                text = "বর্তমান ভার্সন: v${BengaliUtils.toBengaliDigits(BuildConfig.VERSION_NAME)} (বিল্ড কোড: ${BengaliUtils.toBengaliDigits(BuildConfig.VERSION_CODE.toString())})",
+                text = if (isEn)
+                    "Current Version: v${BuildConfig.VERSION_NAME} (Build: ${BuildConfig.VERSION_CODE})"
+                else
+                    "বর্তমান ভার্সন: v${BengaliUtils.toBengaliDigits(BuildConfig.VERSION_NAME)} (বিল্ড কোড: ${BengaliUtils.toBengaliDigits(BuildConfig.VERSION_CODE.toString())})",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = ForestGreenText
@@ -239,7 +244,7 @@ fun GlobalSettingsScreen(
                             } else if (info.hasUpdate) {
                                 updateInfoToShow = info
                             } else {
-                                noUpdateMessage = "আপনি সর্বশেষ সংস্করণ ব্যবহার করছেন।"
+                                noUpdateMessage = if (isEn) "You are using the latest version." else "আপনি সর্বশেষ সংস্করণ ব্যবহার করছেন।"
                             }
                         }
                     }
@@ -259,11 +264,11 @@ fun GlobalSettingsScreen(
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("আপডেট চেক করা হচ্ছে...", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.sp)
+                        Text(if (isEn) "Checking updates..." else "আপডেট চেক করা হচ্ছে...", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.sp)
                     } else {
                         Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("আপডেট চেক করুন", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                        Text(if (isEn) "Check for Updates" else "আপডেট চেক করুন", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
                     }
                 }
             }
@@ -273,36 +278,37 @@ fun GlobalSettingsScreen(
 
         // 2. Theme Settings Section
         SettingsCard(
-            title = "অ্যাপ থিম (Theme Mode)",
+            title = if (isEn) "App Theme (Theme Mode)" else "অ্যাপ থিম (Theme Mode)",
             icon = Icons.Default.ColorLens
         ) {
             val themes = listOf(
-                "system" to "সিস্টেম ডিফল্ট (System Default)",
-                "light" to "লাইট মোড (Light Mode)",
-                "dark" to "ডার্ক মোড (Dark Mode)"
+                "system" to if (isEn) "System Default" else "সিস্টেম ডিফল্ট (System Default)",
+                "light" to if (isEn) "Light Mode" else "লাইট মোড (Light Mode)",
+                "dark" to if (isEn) "Dark Mode" else "ডার্ক মোড (Dark Mode)"
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 themes.forEach { (key, label) ->
+                    val isSelected = (themeMode == key)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable { selectedTheme = key }
+                            .clickable { onThemeModeChange(key) }
                             .padding(vertical = 4.dp, horizontal = 6.dp)
                     ) {
                         RadioButton(
-                            selected = (selectedTheme == key),
-                            onClick = { selectedTheme = key },
+                            selected = isSelected,
+                            onClick = { onThemeModeChange(key) },
                             colors = RadioButtonDefaults.colors(selectedColor = DarkForestGreen)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = label,
                             fontSize = 13.5.sp,
-                            fontWeight = if (selectedTheme == key) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedTheme == key) DarkForestGreen else Color.DarkGray
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) DarkForestGreen else Color.DarkGray
                         )
                     }
                 }
@@ -313,35 +319,36 @@ fun GlobalSettingsScreen(
 
         // 3. Language Settings Section
         SettingsCard(
-            title = "ভাষা (Language)",
+            title = if (isEn) "Language" else "ভাষা (Language)",
             icon = Icons.Default.Language
         ) {
             val languages = listOf(
-                "bn" to "বাংলা (Bangla) - ডিফল্ট",
-                "en" to "English (ইংরেজি) - শীঘ্রই আসছে"
+                "bn" to if (isEn) "Bangla (বাংলা)" else "বাংলা (Bangla) - ডিফল্ট",
+                "en" to if (isEn) "English (Active)" else "English (ইংরেজি) - সক্রিয়"
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 languages.forEach { (key, label) ->
+                    val isSelected = (appLanguage == key)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable { selectedLanguage = key }
+                            .clickable { onLanguageChange(key) }
                             .padding(vertical = 4.dp, horizontal = 6.dp)
                     ) {
                         RadioButton(
-                            selected = (selectedLanguage == key),
-                            onClick = { selectedLanguage = key },
+                            selected = isSelected,
+                            onClick = { onLanguageChange(key) },
                             colors = RadioButtonDefaults.colors(selectedColor = DarkForestGreen)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = label,
                             fontSize = 13.5.sp,
-                            fontWeight = if (selectedLanguage == key) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedLanguage == key) DarkForestGreen else Color.DarkGray
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) DarkForestGreen else Color.DarkGray
                         )
                     }
                 }
