@@ -1972,6 +1972,61 @@ fun CardLayoutEditorDialog(
     }
 }
 
+data class RenderedImageRect(
+    val left: Float,
+    val top: Float,
+    val width: Float,
+    val height: Float
+) {
+    fun normToScreen(norm: Offset): Offset {
+        return Offset(left + norm.x * width, top + norm.y * height)
+    }
+
+    fun screenToNorm(screen: Offset): Offset {
+        if (width <= 0f || height <= 0f) return Offset.Zero
+        val nx = ((screen.x - left) / width).coerceIn(0f, 1f)
+        val ny = ((screen.y - top) / height).coerceIn(0f, 1f)
+        return Offset(nx, ny)
+    }
+}
+
+private fun calculateRenderedImageRect(
+    boxSize: androidx.compose.ui.geometry.Size,
+    imageWidth: Int,
+    imageHeight: Int
+): RenderedImageRect {
+    if (boxSize.width <= 0f || boxSize.height <= 0f || imageWidth <= 0 || imageHeight <= 0) {
+        return RenderedImageRect(0f, 0f, boxSize.width.coerceAtLeast(1f), boxSize.height.coerceAtLeast(1f))
+    }
+
+    val boxAspect = boxSize.width / boxSize.height
+    val imgAspect = imageWidth.toFloat() / imageHeight.toFloat()
+
+    return if (imgAspect > boxAspect) {
+        val renderW = boxSize.width
+        val renderH = boxSize.width / imgAspect
+        val top = (boxSize.height - renderH) / 2f
+        RenderedImageRect(0f, top, renderW, renderH)
+    } else {
+        val renderH = boxSize.height
+        val renderW = boxSize.height * imgAspect
+        val left = (boxSize.width - renderW) / 2f
+        RenderedImageRect(left, 0f, renderW, renderH)
+    }
+}
+
+private fun getBitmapSize(context: Context, uri: Uri): Pair<Int, Int> {
+    return try {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            BitmapFactory.decodeStream(input, null, options)
+        }
+        Pair(options.outWidth.coerceAtLeast(1), options.outHeight.coerceAtLeast(1))
+    } catch (e: Exception) {
+        Pair(1000, 1000)
+    }
+}
+
 private fun detectCardCorners(bitmap: Bitmap): List<Offset> {
     val origW = bitmap.width
     val origH = bitmap.height
@@ -1979,7 +2034,7 @@ private fun detectCardCorners(bitmap: Bitmap): List<Offset> {
         return listOf(Offset(0.05f, 0.05f), Offset(0.95f, 0.05f), Offset(0.95f, 0.95f), Offset(0.05f, 0.95f))
     }
 
-    val maxDim = 250
+    val maxDim = 300
     val scale = minOf(1.0f, maxDim.toFloat() / maxOf(origW, origH))
     val sampleW = (origW * scale).toInt().coerceAtLeast(10)
     val sampleH = (origH * scale).toInt().coerceAtLeast(10)
@@ -1997,33 +2052,61 @@ private fun detectCardCorners(bitmap: Bitmap): List<Offset> {
         lum[i] = (0.299 * r + 0.587 * g + 0.114 * b).toInt()
     }
 
-    var minX = sampleW
-    var maxX = 0
-    var minY = sampleH
-    var maxY = 0
-    var edgeCount = 0
+    val edgeCandidates = ArrayList<Offset>()
+    val edgeThreshold = 25
 
-    val edgeThreshold = 30
+    // Ignore 2% outer border
+    val marginX = (sampleW * 0.02f).toInt().coerceAtLeast(1)
+    val marginY = (sampleH * 0.02f).toInt().coerceAtLeast(1)
 
-    for (y in 2 until sampleH - 2) {
-        for (x in 2 until sampleW - 2) {
+    for (y in marginY + 1 until sampleH - marginY - 1) {
+        for (x in marginX + 1 until sampleW - marginX - 1) {
             val gx = Math.abs(lum[y * sampleW + (x + 1)] - lum[y * sampleW + (x - 1)])
             val gy = Math.abs(lum[(y + 1) * sampleW + x] - lum[(y - 1) * sampleW + x])
             if (gx + gy > edgeThreshold) {
-                if (x < minX) minX = x
-                if (x > maxX) maxX = x
-                if (y < minY) minY = y
-                if (y > maxY) maxY = y
-                edgeCount++
+                edgeCandidates.add(Offset(x.toFloat(), y.toFloat()))
             }
         }
     }
 
-    if (edgeCount > 40 && maxX > minX + 25 && maxY > minY + 25) {
-        val normTL = Offset((minX.toFloat() / sampleW).coerceIn(0.02f, 0.35f), (minY.toFloat() / sampleH).coerceIn(0.02f, 0.35f))
-        val normTR = Offset((maxX.toFloat() / sampleW).coerceIn(0.65f, 0.98f), (minY.toFloat() / sampleH).coerceIn(0.02f, 0.35f))
-        val normBR = Offset((maxX.toFloat() / sampleW).coerceIn(0.65f, 0.98f), (maxY.toFloat() / sampleH).coerceIn(0.65f, 0.98f))
-        val normBL = Offset((minX.toFloat() / sampleW).coerceIn(0.02f, 0.35f), (maxY.toFloat() / sampleH).coerceIn(0.65f, 0.98f))
+    if (edgeCandidates.size > 30) {
+        var minSum = Float.MAX_VALUE
+        var maxSum = -Float.MAX_VALUE
+        var minDiff = Float.MAX_VALUE
+        var maxDiff = -Float.MAX_VALUE
+
+        var bestTL = Offset(sampleW * 0.05f, sampleH * 0.05f)
+        var bestTR = Offset(sampleW * 0.95f, sampleH * 0.05f)
+        var bestBR = Offset(sampleW * 0.95f, sampleH * 0.95f)
+        var bestBL = Offset(sampleW * 0.05f, sampleH * 0.95f)
+
+        for (pt in edgeCandidates) {
+            val sum = pt.x + pt.y
+            val diff = pt.x - pt.y
+
+            if (sum < minSum) {
+                minSum = sum
+                bestTL = pt
+            }
+            if (sum > maxSum) {
+                maxSum = sum
+                bestBR = pt
+            }
+            if (diff > maxDiff) {
+                maxDiff = diff
+                bestTR = pt
+            }
+            if (diff < minDiff) {
+                minDiff = diff
+                bestBL = pt
+            }
+        }
+
+        val normTL = Offset((bestTL.x / sampleW).coerceIn(0.01f, 0.95f), (bestTL.y / sampleH).coerceIn(0.01f, 0.95f))
+        val normTR = Offset((bestTR.x / sampleW).coerceIn(0.05f, 0.99f), (bestTR.y / sampleH).coerceIn(0.01f, 0.95f))
+        val normBR = Offset((bestBR.x / sampleW).coerceIn(0.05f, 0.99f), (bestBR.y / sampleH).coerceIn(0.05f, 0.99f))
+        val normBL = Offset((bestBL.x / sampleW).coerceIn(0.01f, 0.95f), (bestBL.y / sampleH).coerceIn(0.05f, 0.99f))
+
         return listOf(normTL, normTR, normBR, normBL)
     }
 
@@ -2179,6 +2262,9 @@ fun SingleCardCropEditorDialog(
                 }
 
                 // Interactive Crop Canvas Area
+                val cardBitmapSize = remember(imageUri) { getBitmapSize(context, imageUri) }
+                var cardBoxSizePx by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2188,7 +2274,11 @@ fun SingleCardCropEditorDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onGloballyPositioned { coordinates ->
+                                cardBoxSizePx = coordinates.size.toSize()
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         AsyncImage(
@@ -2203,43 +2293,38 @@ fun SingleCardCropEditorDialog(
                                 }
                         )
 
+                        val effW = if (rotation % 180 == 0) cardBitmapSize.first else cardBitmapSize.second
+                        val effH = if (rotation % 180 == 0) cardBitmapSize.second else cardBitmapSize.first
+                        val renderedRect = calculateRenderedImageRect(cardBoxSizePx, effW, effH)
+
                         Canvas(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .pointerInput(Unit) {
-                                    detectDragGestures { change, dragAmount ->
+                                .pointerInput(renderedRect) {
+                                    detectDragGestures { change, _ ->
                                         change.consume()
-                                        val w = size.width.toFloat()
-                                        val h = size.height.toFloat()
-                                        if (w > 0 && h > 0) {
-                                            val dx = dragAmount.x / w
-                                            val dy = dragAmount.y / h
-                                            val touchPos = change.position
-                                            val normPos = Offset(touchPos.x / w, touchPos.y / h)
+                                        val touchPos = change.position
+                                        val normPos = renderedRect.screenToNorm(touchPos)
 
-                                            val dTL = (normPos - cornerTL).getDistance()
-                                            val dTR = (normPos - cornerTR).getDistance()
-                                            val dBR = (normPos - cornerBR).getDistance()
-                                            val dBL = (normPos - cornerBL).getDistance()
+                                        val dTL = (normPos - cornerTL).getDistance()
+                                        val dTR = (normPos - cornerTR).getDistance()
+                                        val dBR = (normPos - cornerBR).getDistance()
+                                        val dBL = (normPos - cornerBL).getDistance()
 
-                                            val minD = minOf(dTL, dTR, dBR, dBL)
-                                            when (minD) {
-                                                dTL -> cornerTL = Offset((cornerTL.x + dx).coerceIn(0f, cornerTR.x - 0.05f), (cornerTL.y + dy).coerceIn(0f, cornerBL.y - 0.05f))
-                                                dTR -> cornerTR = Offset((cornerTR.x + dx).coerceIn(cornerTL.x + 0.05f, 1f), (cornerTR.y + dy).coerceIn(0f, cornerBR.y - 0.05f))
-                                                dBR -> cornerBR = Offset((cornerBR.x + dx).coerceIn(cornerBL.x + 0.05f, 1f), (cornerBR.y + dy).coerceIn(cornerTR.y + 0.05f, 1f))
-                                                dBL -> cornerBL = Offset((cornerBL.x + dx).coerceIn(0f, cornerBR.x - 0.05f), (cornerBL.y + dy).coerceIn(cornerTL.y + 0.05f, 1f))
-                                            }
+                                        val minD = minOf(dTL, dTR, dBR, dBL)
+                                        when (minD) {
+                                            dTL -> cornerTL = Offset(normPos.x.coerceIn(0f, cornerTR.x - 0.05f), normPos.y.coerceIn(0f, cornerBL.y - 0.05f))
+                                            dTR -> cornerTR = Offset(normPos.x.coerceIn(cornerTL.x + 0.05f, 1f), normPos.y.coerceIn(0f, cornerBR.y - 0.05f))
+                                            dBR -> cornerBR = Offset(normPos.x.coerceIn(cornerBL.x + 0.05f, 1f), normPos.y.coerceIn(cornerTR.y + 0.05f, 1f))
+                                            dBL -> cornerBL = Offset(normPos.x.coerceIn(0f, cornerBR.x - 0.05f), normPos.y.coerceIn(cornerTL.y + 0.05f, 1f))
                                         }
                                     }
                                 }
                         ) {
-                            val w = size.width
-                            val h = size.height
-
-                            val pTL = Offset(cornerTL.x * w, cornerTL.y * h)
-                            val pTR = Offset(cornerTR.x * w, cornerTR.y * h)
-                            val pBR = Offset(cornerBR.x * w, cornerBR.y * h)
-                            val pBL = Offset(cornerBL.x * w, cornerBL.y * h)
+                            val pTL = renderedRect.normToScreen(cornerTL)
+                            val pTR = renderedRect.normToScreen(cornerTR)
+                            val pBR = renderedRect.normToScreen(cornerBR)
+                            val pBL = renderedRect.normToScreen(cornerBL)
 
                             val cropPath = Path().apply {
                                 moveTo(pTL.x, pTL.y)
@@ -3236,6 +3321,9 @@ fun SingleDocumentEditorDialog(
                 }
 
                 // Interactive Document Preview & Edge Dragger Canvas
+                val docBitmapSize = remember(imageUri) { getBitmapSize(context, imageUri) }
+                var boxSizePx by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3243,8 +3331,6 @@ fun SingleDocumentEditorDialog(
                         .padding(12.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    var boxSizePx by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
-
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -3265,17 +3351,18 @@ fun SingleDocumentEditorDialog(
                                 }
                         )
 
+                        val effW = if (rotation % 180 == 0) docBitmapSize.first else docBitmapSize.second
+                        val effH = if (rotation % 180 == 0) docBitmapSize.second else docBitmapSize.first
+                        val renderedRect = calculateRenderedImageRect(boxSizePx, effW, effH)
+
                         // Perspective Quad Wireframe & 4 Corner Drag Handles Overlay
                         if (isManualCropActive && boxSizePx.width > 0 && boxSizePx.height > 0) {
+                            val pt0 = renderedRect.normToScreen(corners[0])
+                            val pt1 = renderedRect.normToScreen(corners[1])
+                            val pt2 = renderedRect.normToScreen(corners[2])
+                            val pt3 = renderedRect.normToScreen(corners[3])
+
                             Canvas(modifier = Modifier.fillMaxSize()) {
-                                val w = boxSizePx.width
-                                val h = boxSizePx.height
-
-                                val pt0 = Offset(corners[0].x * w, corners[0].y * h)
-                                val pt1 = Offset(corners[1].x * w, corners[1].y * h)
-                                val pt2 = Offset(corners[2].x * w, corners[2].y * h)
-                                val pt3 = Offset(corners[3].x * w, corners[3].y * h)
-
                                 val path = Path().apply {
                                     moveTo(pt0.x, pt0.y)
                                     lineTo(pt1.x, pt1.y)
@@ -3296,13 +3383,10 @@ fun SingleDocumentEditorDialog(
                             }
 
                             // Interactive Dragger Nodes
-                            val w = boxSizePx.width
-                            val h = boxSizePx.height
-
                             val currentCorners = corners.toMutableList()
 
                             listOf(0, 1, 2, 3).forEach { index ->
-                                val handlePos = Offset(currentCorners[index].x * w, currentCorners[index].y * h)
+                                val handlePos = renderedRect.normToScreen(currentCorners[index])
 
                                 Box(
                                     modifier = Modifier
@@ -3313,14 +3397,14 @@ fun SingleDocumentEditorDialog(
                                             )
                                         }
                                         .size(48.dp)
-                                        .pointerInput(Unit) {
+                                        .pointerInput(renderedRect) {
                                             detectDragGestures { change, dragAmount ->
                                                 change.consume()
-                                                val newX = (handlePos.x + dragAmount.x) / w
-                                                val newY = (handlePos.y + dragAmount.y) / h
-                                                val clamped = Offset(newX.coerceIn(0f, 1f), newY.coerceIn(0f, 1f))
+                                                val currentPos = renderedRect.normToScreen(currentCorners[index])
+                                                val newPos = currentPos + dragAmount
+                                                val normPos = renderedRect.screenToNorm(newPos)
                                                 val updated = currentCorners.toMutableList()
-                                                updated[index] = clamped
+                                                updated[index] = normPos
                                                 corners = updated
                                             }
                                         },
