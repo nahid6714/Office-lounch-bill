@@ -41,8 +41,7 @@ object PrintUtils {
         totalAmount: Double,
         purchaserLabel: String = "ক্রেতার স্বাক্ষর",
         approverLabel: String = "অনুমোদনকারীর স্বাক্ষর",
-        position: PrintPosition = PrintPosition.TOP,
-        isEnglish: Boolean = false
+        position: PrintPosition = PrintPosition.TOP
     ) {
         val printManager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager
         val jobName = "Food_Bill_${dateString.replace("/", "-")}"
@@ -81,8 +80,7 @@ object PrintUtils {
                     totalAmount = totalAmount,
                     purchaserLabel = purchaserLabel,
                     approverLabel = approverLabel,
-                    position = position,
-                    isEnglish = isEnglish
+                    position = position
                 )
                 try {
                     FileOutputStream(destination.fileDescriptor).use { out ->
@@ -113,8 +111,7 @@ object PrintUtils {
         totalAmount: Double,
         purchaserLabel: String = "ক্রেতার স্বাক্ষর",
         approverLabel: String = "অনুমোদনকারীর স্বাক্ষর",
-        position: PrintPosition = PrintPosition.TOP,
-        isEnglish: Boolean = false
+        position: PrintPosition = PrintPosition.TOP
     ) {
         try {
             val pdfDocument = createFoodBillPdfDocument(
@@ -125,8 +122,7 @@ object PrintUtils {
                 totalAmount = totalAmount,
                 purchaserLabel = purchaserLabel,
                 approverLabel = approverLabel,
-                position = position,
-                isEnglish = isEnglish
+                position = position
             )
 
             val cacheDir = File(context.cacheDir, "food_bills").apply { mkdirs() }
@@ -152,8 +148,7 @@ object PrintUtils {
         totalAmount: Double,
         purchaserLabel: String,
         approverLabel: String,
-        position: PrintPosition,
-        isEnglish: Boolean = false
+        position: PrintPosition
     ): PdfDocument {
         val pdfDocument = PdfDocument()
         // Standard A4 dimensions in points: 595 x 842
@@ -179,8 +174,7 @@ object PrintUtils {
                     items = items,
                     totalAmount = totalAmount,
                     purchaserLabel = purchaserLabel,
-                    approverLabel = approverLabel,
-                    isEnglish = isEnglish
+                    approverLabel = approverLabel
                 )
             }
             PrintPosition.BOTTOM -> {
@@ -193,8 +187,7 @@ object PrintUtils {
                     items = items,
                     totalAmount = totalAmount,
                     purchaserLabel = purchaserLabel,
-                    approverLabel = approverLabel,
-                    isEnglish = isEnglish
+                    approverLabel = approverLabel
                 )
             }
             PrintPosition.BOTH -> {
@@ -207,8 +200,7 @@ object PrintUtils {
                     items = items,
                     totalAmount = totalAmount,
                     purchaserLabel = purchaserLabel,
-                    approverLabel = approverLabel,
-                    isEnglish = isEnglish
+                    approverLabel = approverLabel
                 )
                 drawSingleVoucherOnCanvas(
                     canvas = canvas,
@@ -219,8 +211,7 @@ object PrintUtils {
                     items = items,
                     totalAmount = totalAmount,
                     purchaserLabel = purchaserLabel,
-                    approverLabel = approverLabel,
-                    isEnglish = isEnglish
+                    approverLabel = approverLabel
                 )
             }
         }
@@ -238,8 +229,7 @@ object PrintUtils {
         items: List<BillItem>,
         totalAmount: Double,
         purchaserLabel: String,
-        approverLabel: String = "",
-        isEnglish: Boolean = false
+        approverLabel: String = ""
     ) {
         val maroonColor = Color.parseColor("#123528")
 
@@ -274,8 +264,7 @@ object PrintUtils {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        val headerTitle = centerName.ifBlank { if (isEnglish) "Food Bill Memo" else "আল বারাকা খাবার বিল" }
-        canvas.drawText(headerTitle, bannerCenterX, localStartY + 24f, titleTextPaint)
+        canvas.drawText(centerName, bannerCenterX, localStartY + 24f, titleTextPaint)
 
         // Subtitle
         val subtitleTextPaint = Paint().apply {
@@ -284,8 +273,7 @@ object PrintUtils {
             textSize = 11.5f
             textAlign = Paint.Align.CENTER
         }
-        val headerSub = subtitle.ifBlank { if (isEnglish) "Daily Grocery & Meal Bill" else "দৈনিক বাজার ও খাবারের বিল" }
-        canvas.drawText(headerSub, bannerCenterX, localStartY + 38f, subtitleTextPaint)
+        canvas.drawText(subtitle, bannerCenterX, localStartY + 38f, subtitleTextPaint)
 
         // Sawtooth Teeth Bar
         val toothWidth = 10f
@@ -318,9 +306,8 @@ object PrintUtils {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
-        val formattedDate = BengaliUtils.formatDigits(dateString, isEnglish)
-        val dateLabelText = if (isEnglish) "Date : $formattedDate" else "তারিখ : $formattedDate"
-        canvas.drawText(dateLabelText, tableRight, localStartY + 66f, metaPaintRight)
+        val bnDate = BengaliUtils.toBengaliDigits(dateString)
+        canvas.drawText("তারিখ : $bnDate", tableRight, localStartY + 66f, metaPaintRight)
 
         // 3. TABLE GRID CONFIG
         val tableTop = localStartY + 76f
@@ -339,7 +326,7 @@ object PrintUtils {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        val colTitles = if (isEnglish) arrayOf("SL", "Description", "Qty", "Rate", "Amount") else arrayOf("ক্র. নং", "খাবারের নাম / বিবরণ", "পরিমাণ", "দর", "টাকা")
+        val colTitles = arrayOf("ক্র. নং", "খাবারের নাম / বিবরণ", "পরিমাণ", "দর", "টাকা")
         var currentX = tableLeft
         for (i in 0 until 5) {
             val colCenterX = currentX + colWidths[i] / 2f
@@ -384,7 +371,7 @@ object PrintUtils {
 
         var rowY = gridTop
         for (r in 0 until totalRows) {
-            val slNo = BengaliUtils.formatDigits(String.format("%02d", r + 1), isEnglish)
+            val slNo = BengaliUtils.toBengaliDigits(String.format("%02d", r + 1))
             
             // Draw Sl No
             itemBoldPaint.textAlign = Paint.Align.CENTER
@@ -405,17 +392,17 @@ object PrintUtils {
 
                 // Qty
                 itemTextPaint.textAlign = Paint.Align.CENTER
-                val formattedQty = BengaliUtils.formatDigits(item.quantity, isEnglish)
-                canvas.drawText(formattedQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2f, rowY + textYOffset, itemTextPaint)
+                val bnQty = BengaliUtils.toBengaliDigits(item.quantity)
+                canvas.drawText(bnQty, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] / 2f, rowY + textYOffset, itemTextPaint)
 
                 // Rate
-                val formattedRate = if (item.rate == "0" || item.rate.isBlank()) "" else BengaliUtils.formatDigits(item.rate, isEnglish)
-                canvas.drawText(formattedRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2f, rowY + textYOffset, itemTextPaint)
+                val bnRate = if (item.rate == "0" || item.rate.isBlank()) "" else BengaliUtils.toBengaliDigits(item.rate)
+                canvas.drawText(bnRate, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] / 2f, rowY + textYOffset, itemTextPaint)
 
                 // Amount
                 itemBoldPaint.textAlign = Paint.Align.RIGHT
-                val formattedAmount = if (item.amount <= 0) "—" else "${BengaliUtils.formatDigits(DecimalFormat("#,##0").format(item.amount), isEnglish)}/-"
-                canvas.drawText(formattedAmount, tableRight - 6f, rowY + textYOffset, itemBoldPaint)
+                val bnAmount = if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(DecimalFormat("#,##0").format(item.amount))}/-"
+                canvas.drawText(bnAmount, tableRight - 6f, rowY + textYOffset, itemBoldPaint)
             }
 
             // Row Dashed Bottom Line
@@ -435,8 +422,7 @@ object PrintUtils {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
-        val totalLabelText = if (isEnglish) "Total —" else "মোট —"
-        canvas.drawText(totalLabelText, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 6f, totalRowY + 16f, totalLabelPaint)
+        canvas.drawText("মোট —", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 6f, totalRowY + 16f, totalLabelPaint)
 
         // Total Value
         val totalValPaint = Paint().apply {
@@ -446,8 +432,8 @@ object PrintUtils {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
         }
-        val formattedTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatCurrency(totalAmount, isEnglish)}/-"
-        canvas.drawText(formattedTotal, tableRight - 6f, totalRowY + 16f, totalValPaint)
+        val bnTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
+        canvas.drawText(bnTotal, tableRight - 6f, totalRowY + 16f, totalValPaint)
 
         val tableBottomY = totalRowY + 22f
         canvas.drawLine(tableLeft, tableBottomY, tableRight, tableBottomY, gridBorderPaint)
@@ -481,7 +467,7 @@ object PrintUtils {
 
         // Single Signature Line (Left side)
         canvas.drawLine(tableLeft, sigLineY, tableLeft + sigLineWidth, sigLineY, linePaint)
-        val labelText = purchaserLabel.ifBlank { if (isEnglish) "Purchaser Signature" else "ক্রয়কারীর স্বাক্ষর" }
+        val labelText = purchaserLabel.ifBlank { "ক্রয়কারীর স্বাক্ষর" }
         canvas.drawText(labelText, tableLeft + (sigLineWidth / 2f), sigLineY + 14f, sigPaint)
 
         canvas.restore()

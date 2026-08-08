@@ -60,12 +60,10 @@ import com.example.util.PrintPosition
 @Composable
 fun VoucherPreviewDialog(
     state: CurrentBillState,
-    appLanguage: String = "bn",
     onDismiss: () -> Unit,
     onPrint: (PrintPosition) -> Unit,
     onSharePdf: (PrintPosition) -> Unit
 ) {
-    val isEn = appLanguage == "en"
     val validItems = state.items.filter { it.name.isNotBlank() || it.amount > 0 }
     var selectedPosition by remember { mutableStateOf(PrintPosition.TOP) }
 
@@ -92,13 +90,13 @@ fun VoucherPreviewDialog(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (isEn) "Bill Preview & A4 Position" else "বিল প্রিভিউ & A4 পজিশন",
+                            text = "বিল প্রিভিউ & A4 পজিশন",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = ForestGreenText
                         )
                         Text(
-                            text = if (isEn) "Select Print/PDF position on A4 paper:" else "A4 পেপারে প্রিন্ট/পিডিএফ পজিশন সিলেক্ট করুন:",
+                            text = "A4 পেপারে প্রিন্ট/পিডিএফ পজিশন সিলেক্ট করুন:",
                             fontSize = 12.sp,
                             color = Color.DarkGray
                         )
@@ -108,7 +106,7 @@ fun VoucherPreviewDialog(
                         onClick = onDismiss,
                         modifier = Modifier.testTag("close_preview_dialog")
                     ) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = if (isEn) "Close" else "বন্ধ করুন", tint = ForestGreenText)
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "বন্ধ করুন", tint = ForestGreenText)
                     }
                 }
 
@@ -124,11 +122,6 @@ fun VoucherPreviewDialog(
                 ) {
                     PrintPosition.values().forEach { pos ->
                         val isSelected = selectedPosition == pos
-                        val posLabel = when (pos) {
-                            PrintPosition.TOP -> if (isEn) "Top Half" else "উপরে"
-                            PrintPosition.BOTTOM -> if (isEn) "Bottom Half" else "নিচে"
-                            PrintPosition.BOTH -> if (isEn) "Full Page (Both)" else "সম্পূর্ণ পেজ (২টি)"
-                        }
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -142,7 +135,7 @@ fun VoucherPreviewDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = posLabel,
+                                text = pos.label,
                                 fontSize = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) Color.White else ForestGreenText,
@@ -172,19 +165,19 @@ fun VoucherPreviewDialog(
                     ) {
                         when (selectedPosition) {
                             PrintPosition.TOP -> {
-                                SingleMemoVoucherCard(state = state, validItems = validItems, appLanguage = appLanguage)
+                                SingleMemoVoucherCard(state = state, validItems = validItems)
                                 Spacer(modifier = Modifier.height(10.dp))
-                                EmptyPaperHalfPlaceholder(isEn = isEn)
+                                EmptyPaperHalfPlaceholder()
                             }
                             PrintPosition.BOTTOM -> {
-                                EmptyPaperHalfPlaceholder(isEn = isEn)
+                                EmptyPaperHalfPlaceholder()
                                 Spacer(modifier = Modifier.height(10.dp))
-                                SingleMemoVoucherCard(state = state, validItems = validItems, appLanguage = appLanguage)
+                                SingleMemoVoucherCard(state = state, validItems = validItems)
                             }
                             PrintPosition.BOTH -> {
-                                SingleMemoVoucherCard(state = state, validItems = validItems, appLanguage = appLanguage)
+                                SingleMemoVoucherCard(state = state, validItems = validItems)
                                 Spacer(modifier = Modifier.height(10.dp))
-                                SingleMemoVoucherCard(state = state, validItems = validItems, appLanguage = appLanguage)
+                                SingleMemoVoucherCard(state = state, validItems = validItems)
                             }
                         }
                     }
@@ -209,7 +202,7 @@ fun VoucherPreviewDialog(
                     ) {
                         Icon(imageVector = Icons.Default.Print, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = if (isEn) "Print" else "প্রিন্ট করুন", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(text = "প্রিন্ট করুন", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
 
                     // Share PDF / WhatsApp Button
@@ -224,7 +217,7 @@ fun VoucherPreviewDialog(
                     ) {
                         Icon(imageVector = Icons.Default.Share, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = if (isEn) "Share PDF" else "পিডিএফ শেয়ার", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(text = "পিডিএফ শেয়ার", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
@@ -236,10 +229,8 @@ fun VoucherPreviewDialog(
 private fun SingleMemoVoucherCard(
     state: CurrentBillState,
     validItems: List<BillItem>,
-    appLanguage: String = "bn",
     modifier: Modifier = Modifier
 ) {
-    val isEn = appLanguage == "en"
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(6.dp),
@@ -258,7 +249,7 @@ private fun SingleMemoVoucherCard(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = state.centerName.ifBlank { if (isEn) "Food Bill Memo" else "আল বারাকা খাবার বিল" },
+                        text = state.centerName,
                         style = TextStyle(
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
@@ -267,7 +258,7 @@ private fun SingleMemoVoucherCard(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = state.subtitle.ifBlank { if (isEn) "Daily Grocery & Meal Bill" else "দৈনিক বাজার ও খাবারের বিল" },
+                        text = state.subtitle,
                         style = TextStyle(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Normal,
@@ -292,7 +283,7 @@ private fun SingleMemoVoucherCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = (if (isEn) "Date: " else "তারিখ: ") + BengaliUtils.formatDigits(state.dateString, isEn),
+                        text = "তারিখ: ${BengaliUtils.toBengaliDigits(state.dateString)}",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaroonHeaderColor
@@ -321,7 +312,7 @@ private fun SingleMemoVoucherCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isEn) "SL" else "ক্র. নং",
+                            text = "ক্র. নং",
                             modifier = Modifier.weight(1.0f),
                             style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center),
                             maxLines = 1,
@@ -329,7 +320,7 @@ private fun SingleMemoVoucherCard(
                         )
                         Box(modifier = Modifier.width(1.2.dp).height(12.dp).background(Color.White))
                         Text(
-                            text = if (isEn) "Description" else "খাবারের নাম / বিবরণ",
+                            text = "খাবারের নাম / বিবরণ",
                             modifier = Modifier.weight(2.5f).padding(start = 4.dp),
                             style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Start),
                             maxLines = 1,
@@ -337,19 +328,19 @@ private fun SingleMemoVoucherCard(
                         )
                         Box(modifier = Modifier.width(1.2.dp).height(12.dp).background(Color.White))
                         Text(
-                            text = if (isEn) "Qty" else "পরিমাণ",
+                            text = "পরিমাণ",
                             modifier = Modifier.weight(1.2f),
                             style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
                         )
                         Box(modifier = Modifier.width(1.2.dp).height(12.dp).background(Color.White))
                         Text(
-                            text = if (isEn) "Rate" else "দর",
+                            text = "দর",
                             modifier = Modifier.weight(0.9f),
                             style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
                         )
                         Box(modifier = Modifier.width(1.2.dp).height(12.dp).background(Color.White))
                         Text(
-                            text = if (isEn) "Amount" else "টাকা",
+                            text = "টাকা",
                             modifier = Modifier.weight(1.2f).padding(end = 4.dp),
                             style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.End)
                         )
@@ -357,8 +348,7 @@ private fun SingleMemoVoucherCard(
 
                     // Table Body Rows
                     for (r in 0 until totalRows) {
-                        val slNoStr = String.format("%02d", r + 1)
-                        val slNo = BengaliUtils.formatDigits(slNoStr, isEn)
+                        val slNo = BengaliUtils.toBengaliDigits(String.format("%02d", r + 1))
                         val item = if (r < validItems.size) validItems[r] else null
 
                         Row(
@@ -394,21 +384,21 @@ private fun SingleMemoVoucherCard(
                             Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(memoThemeBorder))
 
                             Text(
-                                text = if (item != null) BengaliUtils.formatDigits(item.quantity, isEn) else "",
+                                text = if (item != null) BengaliUtils.toBengaliDigits(item.quantity) else "",
                                 modifier = Modifier.weight(1.2f),
                                 style = TextStyle(fontSize = itemTextSize, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
                             )
                             Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(memoThemeBorder))
 
                             Text(
-                                text = if (item != null && item.rate != "0" && item.rate.isNotBlank()) BengaliUtils.formatDigits(item.rate, isEn) else "",
+                                text = if (item != null && item.rate != "0" && item.rate.isNotBlank()) BengaliUtils.toBengaliDigits(item.rate) else "",
                                 modifier = Modifier.weight(0.9f),
                                 style = TextStyle(fontSize = itemTextSize, color = Color(0xFF2C1810), textAlign = TextAlign.Center)
                             )
                             Box(modifier = Modifier.width(1.2.dp).height(dividerBoxHeight).background(memoThemeBorder))
 
                             val bnAmount = if (item != null) {
-                                if (item.amount <= 0) "—" else "${BengaliUtils.formatDigits(item.amount.toInt().toString(), isEn)}/-"
+                                if (item.amount <= 0) "—" else "${BengaliUtils.toBengaliDigits(item.amount.toInt().toString())}/-"
                             } else ""
                             Text(
                                 text = bnAmount,
@@ -437,13 +427,13 @@ private fun SingleMemoVoucherCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isEn) "Total —" else "মোট —",
+                            text = "মোট —",
                             modifier = Modifier.weight(5.6f).padding(end = 6.dp),
                             style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = memoThemeBorder, textAlign = TextAlign.End)
                         )
                         Box(modifier = Modifier.width(1.2.dp).height(16.dp).background(memoThemeBorder))
                         Text(
-                            text = "${BengaliUtils.formatCurrency(state.totalAmount, isEn)}/-",
+                            text = "${BengaliUtils.formatBengaliCurrency(state.totalAmount)}/-",
                             modifier = Modifier.weight(1.2f).padding(end = 4.dp),
                             style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = memoThemeBorder, textAlign = TextAlign.End)
                         )
@@ -468,7 +458,7 @@ private fun SingleMemoVoucherCard(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = state.purchaserLabel.ifBlank { if (isEn) "Purchaser Signature" else "ক্রয়কারীর স্বাক্ষর" },
+                            text = state.purchaserLabel.ifBlank { "ক্রয়কারীর স্বাক্ষর" },
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF2C1810),
@@ -482,7 +472,7 @@ private fun SingleMemoVoucherCard(
 }
 
 @Composable
-private fun EmptyPaperHalfPlaceholder(isEn: Boolean = false) {
+private fun EmptyPaperHalfPlaceholder() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -491,7 +481,7 @@ private fun EmptyPaperHalfPlaceholder(isEn: Boolean = false) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = if (isEn) "Blank Space" else "খালি পেজ (ফাঁকা থাকবে)",
+            text = "খালি পেজ (ফাঁকা থাকবে)",
             fontSize = 11.sp,
             color = Color.LightGray,
             fontWeight = FontWeight.Bold

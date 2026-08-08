@@ -36,7 +36,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,7 +43,6 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -107,7 +105,6 @@ val MaroonTextColor = ForestGreenText
 fun MemoVoucherCard(
     state: CurrentBillState,
     quickPresets: List<QuickPreset> = emptyList(),
-    appLanguage: String = "bn",
     onPresetClick: (name: String, qty: String, rate: String, amount: String) -> Unit = { _, _, _, _ -> },
     onAddCustomPreset: (name: String, qty: String, rate: String, amount: String) -> Unit = { _, _, _, _ -> },
     onRemovePreset: (preset: QuickPreset) -> Unit = {},
@@ -124,8 +121,6 @@ fun MemoVoucherCard(
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val isEn = appLanguage == "en"
-    val isDark = isSystemInDarkTheme()
 
     var showManagePresetsDialog by remember { mutableStateOf(false) }
 
@@ -136,16 +131,12 @@ fun MemoVoucherCard(
     }
     val purchaserLabelFocusRequester = remember { FocusRequester() }
 
-    val cardBg = if (isDark) Color(0xFF18231E) else CreamPaperBg
-    val headerBorder = if (isDark) LightForestGreen else DarkForestGreen
-    val headerText = if (isDark) LightForestGreen else ForestGreenText
-
     Card(
         modifier = modifier
             .fillMaxWidth()
             .testTag("memo_voucher_card"),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
+        colors = CardDefaults.cardColors(containerColor = CreamPaperBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -165,7 +156,7 @@ fun MemoVoucherCard(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = state.centerName.ifBlank { if (isEn) "Food Bill Memo" else "আল বারাকা খাবার বিল" },
+                        text = state.centerName,
                         style = TextStyle(
                             fontFamily = HeadingFontFamily,
                             fontSize = 22.sp,
@@ -176,7 +167,7 @@ fun MemoVoucherCard(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = state.subtitle.ifBlank { if (isEn) "Daily Grocery & Meal Bill" else "দৈনিক বাজার ও খাবারের বিল" },
+                        text = state.subtitle,
                         style = TextStyle(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Normal,
@@ -210,34 +201,34 @@ fun MemoVoucherCard(
                             .padding(vertical = 4.dp)
                     ) {
                         Text(
-                            text = if (isEn) "Date:" else "তারিখ:",
+                            text = "তারিখ:",
                             style = TextStyle(
                                 fontFamily = HeadingFontFamily,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = headerText
+                                color = ForestGreenText
                             )
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = BengaliUtils.formatDigits(state.dateString, isEn),
+                            text = BengaliUtils.toBengaliDigits(state.dateString),
                             style = TextStyle(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Color.Black
                             )
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             imageVector = Icons.Default.CalendarToday,
-                            contentDescription = if (isEn) "Change Date" else "তারিখ পরিবর্তন",
+                            contentDescription = "তারিখ পরিবর্তন",
                             tint = DarkForestGreen,
                             modifier = Modifier.padding(start = 2.dp)
                         )
                     }
                 }
 
-                Divider(color = if (isDark) Color(0xFF32463B) else WarmBorderColor, thickness = 1.dp)
+                Divider(color = WarmBorderColor, thickness = 1.dp)
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Action Buttons Row (Left: নতুন আইটেম যোগ করুন, Right: দ্রুত আইটেম যোগ করুন)
@@ -263,21 +254,21 @@ fun MemoVoucherCard(
                                     .testTag("add_item_button"),
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = if (isDark) LightForestGreen else DarkForestGreen
+                                    contentColor = DarkForestGreen
                                 )
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Add,
                                     contentDescription = null,
-                                    tint = if (isDark) LightForestGreen else DarkForestGreen,
+                                    tint = DarkForestGreen,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = if (canAddItem) (if (isEn) "Add Item" else "নতুন আইটেম যোগ করুন") else (if (isEn) "Max 18 Items" else "সর্বোচ্চ ১৮ টি"),
+                                    text = if (canAddItem) "নতুন আইটেম যোগ করুন" else "সর্বোচ্চ ১৮ টি",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isDark) LightForestGreen else DarkForestGreen,
+                                    color = DarkForestGreen,
                                     maxLines = 1
                                 )
                             }
@@ -285,7 +276,6 @@ fun MemoVoucherCard(
                             QuickItemSelectorButton(
                                 presets = quickPresets,
                                 addedItemNames = addedItemNames,
-                                appLanguage = appLanguage,
                                 onPresetClick = onPresetClick,
                                 onManagePresetsClick = { showManagePresetsDialog = true },
                                 modifier = Modifier.fillMaxWidth()
@@ -307,21 +297,21 @@ fun MemoVoucherCard(
                                     .testTag("add_item_button"),
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = if (isDark) LightForestGreen else DarkForestGreen
+                                    contentColor = DarkForestGreen
                                 )
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Add,
                                     contentDescription = null,
-                                    tint = if (isDark) LightForestGreen else DarkForestGreen,
+                                    tint = DarkForestGreen,
                                     modifier = Modifier.size(15.dp)
                                 )
                                 Spacer(modifier = Modifier.width(2.dp))
                                 Text(
-                                    text = if (canAddItem) (if (isEn) "Add Item" else "নতুন আইটেম যোগ করুন") else (if (isEn) "Max 18 Items" else "সর্বোচ্চ ১৮ টি"),
+                                    text = if (canAddItem) "নতুন আইটেম যোগ করুন" else "সর্বোচ্চ ১৮ টি",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isDark) LightForestGreen else DarkForestGreen,
+                                    color = DarkForestGreen,
                                     maxLines = 1,
                                     softWrap = false
                                 )
@@ -330,7 +320,6 @@ fun MemoVoucherCard(
                             QuickItemSelectorButton(
                                 presets = quickPresets,
                                 addedItemNames = addedItemNames,
-                                appLanguage = appLanguage,
                                 onPresetClick = onPresetClick,
                                 onManagePresetsClick = { showManagePresetsDialog = true },
                                 modifier = Modifier.weight(1f)
@@ -352,54 +341,53 @@ fun MemoVoucherCard(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Table Header Row
-                val tableHeaderBg = if (isDark) Color(0xFF23362B) else Color(0xFFF0E8DF)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(tableHeaderBg, shape = RoundedCornerShape(4.dp))
+                        .background(Color(0xFFF0E8DF), shape = RoundedCornerShape(4.dp))
                         .padding(vertical = 8.dp, horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (isEn) "Description" else "বিবরণ",
+                        text = "বিবরণ",
                         modifier = Modifier.weight(2.0f),
                         style = TextStyle(
                             fontFamily = HeadingFontFamily,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = headerText
+                            color = ForestGreenText
                         )
                     )
                     Text(
-                        text = if (isEn) "Qty" else "পরিমাণ",
+                        text = "পরিমাণ",
                         modifier = Modifier.weight(1.4f),
                         style = TextStyle(
                             fontFamily = HeadingFontFamily,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = headerText,
+                            color = ForestGreenText,
                             textAlign = TextAlign.Center
                         )
                     )
                     Text(
-                        text = if (isEn) "Rate (৳)" else "দর",
+                        text = "দর",
                         modifier = Modifier.weight(0.9f),
                         style = TextStyle(
                             fontFamily = HeadingFontFamily,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = headerText,
+                            color = ForestGreenText,
                             textAlign = TextAlign.Center
                         )
                     )
                     Text(
-                        text = if (isEn) "Amount (৳)" else "টাকা",
+                        text = "টাকা",
                         modifier = Modifier.weight(1.1f),
                         style = TextStyle(
                             fontFamily = HeadingFontFamily,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = headerText,
+                            color = ForestGreenText,
                             textAlign = TextAlign.End
                         )
                     )
@@ -418,7 +406,6 @@ fun MemoVoucherCard(
                     MemoItemRow(
                         index = index,
                         item = item,
-                        appLanguage = appLanguage,
                         nameFocusRequester = rowRequesters?.getOrNull(0) ?: remember { FocusRequester() },
                         qtyFocusRequester = rowRequesters?.getOrNull(1) ?: remember { FocusRequester() },
                         rateFocusRequester = rowRequesters?.getOrNull(2) ?: remember { FocusRequester() },
@@ -430,13 +417,12 @@ fun MemoVoucherCard(
                         onAmountChange = { onUpdateItemAmount(item.id, it) },
                         onRemove = { onRemoveItem(item.id) }
                     )
-                    Divider(color = if (isDark) Color(0xFF2C3E34) else Color(0xFFECE3D8), thickness = 0.5.dp)
+                    Divider(color = Color(0xFFECE3D8), thickness = 0.5.dp)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Total Summary Row with Brass Dashed/Stitched Border
-                val totalBoxBg = if (isDark) Color(0xFF1E3027) else Color(0xFFFFFBF2)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -451,7 +437,7 @@ fun MemoVoucherCard(
                                 cornerRadius = CornerRadius(8.dp.toPx())
                             )
                         }
-                        .background(totalBoxBg, shape = RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFFFBF2), shape = RoundedCornerShape(8.dp))
                         .padding(horizontal = 14.dp, vertical = 12.dp)
                 ) {
                     Row(
@@ -460,21 +446,21 @@ fun MemoVoucherCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isEn) "Total — " else "মোট — ",
+                            text = "মোট — ",
                             style = TextStyle(
                                 fontFamily = HeadingFontFamily,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = headerText
+                                color = ForestGreenText
                             )
                         )
                         Text(
-                            text = BengaliUtils.formatCurrency(state.totalAmount, isEn) + " ৳",
+                            text = BengaliUtils.formatBengaliCurrency(state.totalAmount),
                             style = TextStyle(
                                 fontFamily = HeadingFontFamily,
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = if (isDark) BrassAccent else DarkForestGreen
+                                color = DarkForestGreen
                             ),
                             modifier = Modifier.testTag("total_amount_text")
                         )
@@ -550,7 +536,6 @@ fun MemoVoucherCard(
 fun MemoItemRow(
     index: Int,
     item: BillItem,
-    appLanguage: String = "bn",
     nameFocusRequester: FocusRequester,
     qtyFocusRequester: FocusRequester,
     rateFocusRequester: FocusRequester,
@@ -564,13 +549,6 @@ fun MemoItemRow(
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val isEn = appLanguage == "en"
-    val isDark = isSystemInDarkTheme()
-
-    val inputBg = if (isDark) Color(0xFF233029) else Color.White
-    val inputBorder = if (isDark) Color(0xFF384D41) else WarmBorderColor
-    val textColor = if (isDark) Color(0xFFE2EBE6) else Color.Black
-    val placeholderColor = if (isDark) Color(0xFF8C9E95) else Color.Gray.copy(alpha = 0.6f)
 
     Row(
         modifier = Modifier
@@ -582,14 +560,14 @@ fun MemoItemRow(
         Box(
             modifier = Modifier
                 .weight(2.0f)
-                .background(inputBg, shape = RoundedCornerShape(4.dp))
-                .border(0.5.dp, inputBorder, RoundedCornerShape(4.dp))
+                .background(Color.White, shape = RoundedCornerShape(4.dp))
+                .border(0.5.dp, WarmBorderColor, RoundedCornerShape(4.dp))
                 .padding(horizontal = 6.dp, vertical = 6.dp)
         ) {
             if (item.name.isEmpty()) {
                 Text(
-                    text = if (isEn) "Item Name" else "আইটেমের নাম",
-                    color = placeholderColor,
+                    text = "আইটেমের নাম",
+                    color = Color.Gray.copy(alpha = 0.6f),
                     fontSize = 14.sp
                 )
             }
@@ -604,9 +582,9 @@ fun MemoItemRow(
                 textStyle = TextStyle(
                     fontSize = nameFontSize,
                     fontWeight = FontWeight.Bold,
-                    color = textColor
+                    color = Color.Black
                 ),
-                cursorBrush = SolidColor(if (isDark) LightForestGreen else DarkForestGreen),
+                cursorBrush = SolidColor(DarkForestGreen),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { qtyFocusRequester.requestFocus() }),
@@ -621,13 +599,13 @@ fun MemoItemRow(
 
         // Quantity
         var showUnitMenu by remember { mutableStateOf(false) }
-        val commonUnits = if (isEn) listOf("kg", "L", "pcs", "pkt", "gm", "doz", "bundle") else listOf("কেজি", "লিটার", "পোয়া", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি")
+        val commonUnits = listOf("কেজি", "লিটার", "পোয়া", "পিস", "প্যাকেট", "গ্রাম", "ডজন", "আঁটি")
 
         Box(
             modifier = Modifier
                 .weight(1.4f)
-                .background(inputBg, shape = RoundedCornerShape(4.dp))
-                .border(0.5.dp, inputBorder, RoundedCornerShape(4.dp))
+                .background(Color.White, shape = RoundedCornerShape(4.dp))
+                .border(0.5.dp, WarmBorderColor, RoundedCornerShape(4.dp))
                 .padding(horizontal = 4.dp, vertical = 4.dp)
         ) {
             Row(
@@ -637,8 +615,8 @@ fun MemoItemRow(
                 Box(modifier = Modifier.weight(1f)) {
                     if (item.quantity.isEmpty()) {
                         Text(
-                            text = if (isEn) "Qty" else "পরিমাণ",
-                            color = placeholderColor,
+                            text = "পরিমাণ",
+                            color = Color.Gray.copy(alpha = 0.5f),
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
@@ -646,14 +624,14 @@ fun MemoItemRow(
                     }
                     BasicTextField(
                         value = item.quantity,
-                        onValueChange = { onQtyChange(BengaliUtils.formatDigits(it, isEn)) },
+                        onValueChange = { onQtyChange(BengaliUtils.toBengaliDigits(it)) },
                         textStyle = TextStyle(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = textColor,
+                            color = Color.Black,
                             textAlign = TextAlign.Center
                         ),
-                        cursorBrush = SolidColor(if (isDark) LightForestGreen else DarkForestGreen),
+                        cursorBrush = SolidColor(DarkForestGreen),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { rateFocusRequester.requestFocus() }),
@@ -668,7 +646,7 @@ fun MemoItemRow(
                 Box {
                     Surface(
                         shape = RoundedCornerShape(3.dp),
-                        color = if (isDark) Color(0xFF2E3E35) else Color(0xFFEBE2D8),
+                        color = Color(0xFFEBE2D8),
                         modifier = Modifier
                             .clickable { showUnitMenu = true }
                             .padding(horizontal = 2.dp, vertical = 2.dp)
@@ -676,7 +654,7 @@ fun MemoItemRow(
                         Text(
                             text = "▼",
                             fontSize = 8.sp,
-                            color = if (isDark) LightForestGreen else DarkForestGreen,
+                            color = DarkForestGreen,
                             modifier = Modifier.padding(2.dp)
                         )
                     }
@@ -691,9 +669,8 @@ fun MemoItemRow(
                                 onClick = {
                                     showUnitMenu = false
                                     val digits = item.quantity.filter { it.isDigit() || it == '.' || it in '০'..'৯' }
-                                    val formattedDigits = BengaliUtils.formatDigits(digits, isEn)
-                                    val defaultOne = if (isEn) "1" else "১"
-                                    val newQty = if (formattedDigits.isNotBlank()) "$formattedDigits $unit" else "$defaultOne $unit"
+                                    val bnDigits = BengaliUtils.toBengaliDigits(digits)
+                                    val newQty = if (bnDigits.isNotBlank()) "$bnDigits $unit" else "১ $unit"
                                     onQtyChange(newQty)
                                 }
                             )
@@ -709,14 +686,14 @@ fun MemoItemRow(
         Box(
             modifier = Modifier
                 .weight(0.9f)
-                .background(inputBg, shape = RoundedCornerShape(4.dp))
-                .border(0.5.dp, inputBorder, RoundedCornerShape(4.dp))
+                .background(Color.White, shape = RoundedCornerShape(4.dp))
+                .border(0.5.dp, WarmBorderColor, RoundedCornerShape(4.dp))
                 .padding(horizontal = 4.dp, vertical = 6.dp)
         ) {
-            val displayRate = if (item.rate == "0") "" else BengaliUtils.formatDigits(item.rate, isEn)
+            val displayRate = if (item.rate == "0") "" else BengaliUtils.toBengaliDigits(item.rate)
             BasicTextField(
                 value = displayRate,
-                onValueChange = { onRateChange(BengaliUtils.formatDigits(it, isEn)) },
+                onValueChange = { onRateChange(BengaliUtils.toBengaliDigits(it)) },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Next
@@ -725,10 +702,10 @@ fun MemoItemRow(
                 textStyle = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = textColor,
+                    color = Color.Black,
                     textAlign = TextAlign.Center
                 ),
-                cursorBrush = SolidColor(if (isDark) LightForestGreen else DarkForestGreen),
+                cursorBrush = SolidColor(DarkForestGreen),
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -737,8 +714,8 @@ fun MemoItemRow(
             )
             if (item.rate == "0" || item.rate.isEmpty()) {
                 Text(
-                    text = if (isEn) "0" else "০",
-                    color = placeholderColor,
+                    text = "০",
+                    color = Color.Gray.copy(alpha = 0.5f),
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
@@ -749,18 +726,17 @@ fun MemoItemRow(
         Spacer(modifier = Modifier.width(4.dp))
 
         // Amount
-        val rawAmountStr = if (item.amount % 1.0 == 0.0) item.amount.toLong().toString() else String.format(java.util.Locale.US, "%.1f", item.amount)
-        val displayAmount = if (item.amount <= 0) "" else BengaliUtils.formatDigits(rawAmountStr, isEn)
+        val displayAmount = if (item.amount <= 0) "" else BengaliUtils.toBengaliDigits(if (item.amount % 1.0 == 0.0) item.amount.toLong().toString() else String.format(java.util.Locale.US, "%.1f", item.amount))
         Box(
             modifier = Modifier
                 .weight(1.1f)
-                .background(inputBg, shape = RoundedCornerShape(4.dp))
-                .border(0.5.dp, inputBorder, RoundedCornerShape(4.dp))
+                .background(Color.White, shape = RoundedCornerShape(4.dp))
+                .border(0.5.dp, WarmBorderColor, RoundedCornerShape(4.dp))
                 .padding(horizontal = 4.dp, vertical = 6.dp)
         ) {
             BasicTextField(
                 value = displayAmount,
-                onValueChange = { onAmountChange(BengaliUtils.formatDigits(it, isEn)) },
+                onValueChange = { onAmountChange(BengaliUtils.toBengaliDigits(it)) },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
                     imeAction = if (nextTargetRequester != null) ImeAction.Next else ImeAction.Done
@@ -776,10 +752,10 @@ fun MemoItemRow(
                 textStyle = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = textColor,
+                    color = Color.Black,
                     textAlign = TextAlign.End
                 ),
-                cursorBrush = SolidColor(if (isDark) LightForestGreen else DarkForestGreen),
+                cursorBrush = SolidColor(DarkForestGreen),
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -788,8 +764,8 @@ fun MemoItemRow(
             )
             if (displayAmount.isEmpty()) {
                 Text(
-                    text = if (isEn) "0" else "০",
-                    color = placeholderColor,
+                    text = "০",
+                    color = Color.Gray.copy(alpha = 0.5f),
                     fontSize = 13.sp,
                     textAlign = TextAlign.End,
                     modifier = Modifier.fillMaxWidth()
@@ -862,13 +838,10 @@ fun SawtoothDivider() {
 fun QuickItemSelectorButton(
     presets: List<QuickPreset>,
     addedItemNames: Set<String>,
-    appLanguage: String = "bn",
     onPresetClick: (name: String, qty: String, rate: String, amount: String) -> Unit,
     onManagePresetsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isEn = appLanguage == "en"
-    val isDark = isSystemInDarkTheme()
     var expandedDropdown by remember { mutableStateOf(false) }
     val transitionState = remember {
         MutableTransitionState(false).apply { targetState = false }
@@ -905,7 +878,7 @@ fun QuickItemSelectorButton(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = if (expandedDropdown) (if (isEn) "Close Quick Items ▴" else "দ্রুত আইটেম বন্ধ করুন ▴") else (if (isEn) "Add Quick Item ▾" else "দ্রুত আইটেম যোগ করুন ▾"),
+                    text = if (expandedDropdown) "দ্রুত আইটেম বন্ধ করুন ▴" else "দ্রুত আইটেম যোগ করুন ▾",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -954,7 +927,7 @@ fun QuickItemSelectorButton(
                     ) {
                         Card(
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF1E2D25) else CreamPaperBg),
+                            colors = CardDefaults.cardColors(containerColor = CreamPaperBg),
                             elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
                             border = BorderStroke(1.5.dp, DarkForestGreen.copy(alpha = 0.3f)),
                             modifier = Modifier
@@ -987,17 +960,17 @@ fun QuickItemSelectorButton(
                                                 Icon(
                                                     imageVector = Icons.Default.Add,
                                                     contentDescription = null,
-                                                    tint = if (isDark) LightForestGreen else DarkForestGreen,
+                                                    tint = DarkForestGreen,
                                                     modifier = Modifier.size(16.dp)
                                                 )
                                             }
                                         }
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = if (isEn) "Select Quick Preset" else "দ্রুত প্রিসেট নির্বাচন করুন",
+                                            text = "দ্রুত প্রিসেট নির্বাচন করুন",
                                             fontSize = 15.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isDark) LightForestGreen else DarkForestGreen,
+                                            color = DarkForestGreen,
                                             fontFamily = HeadingFontFamily
                                         )
                                     }
@@ -1008,14 +981,14 @@ fun QuickItemSelectorButton(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
-                                            contentDescription = if (isEn) "Close" else "বন্ধ করুন",
+                                            contentDescription = "বন্ধ করুন",
                                             tint = Color.Gray,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
                                 }
 
-                                Divider(color = if (isDark) Color(0xFF32463B) else WarmBorderColor, thickness = 1.dp)
+                                Divider(color = WarmBorderColor, thickness = 1.dp)
                                 Spacer(modifier = Modifier.height(10.dp))
 
                                 // Item List
@@ -1028,14 +1001,14 @@ fun QuickItemSelectorButton(
                                     ) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             Text(
-                                                text = if (isEn) "No preset items saved" else "কোনো প্রিসেট আইটেম সংরক্ষিত নেই",
+                                                text = "কোনো প্রিসেট আইটেম সংরক্ষিত নেই",
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = Color.Gray
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                text = if (isEn) "Tap button below to add new presets" else "নিচের বাটনে ট্যাপ করে নতুন প্রিসেট যোগ করুন",
+                                                text = "নিচের বাটনে ট্যাপ করে নতুন প্রিসেট যোগ করুন",
                                                 fontSize = 11.sp,
                                                 color = Color.LightGray
                                             )
@@ -1051,7 +1024,7 @@ fun QuickItemSelectorButton(
                                     ) {
                                         presets.forEach { preset ->
                                             val isAdded = addedItemNames.contains(preset.name.trim())
-                                            val formattedText = BengaliUtils.formatPresetDisplayText(preset, isEn)
+                                            val formattedText = BengaliUtils.formatPresetDisplayText(preset)
 
                                             Surface(
                                                 shape = RoundedCornerShape(10.dp),
