@@ -48,7 +48,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import android.graphics.pdf.PdfRenderer
+import android.os.ParcelFileDescriptor
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
@@ -64,8 +72,11 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FormatAlignCenter
 import androidx.compose.material.icons.filled.FormatAlignLeft
 import androidx.compose.material.icons.filled.FormatAlignRight
+import androidx.compose.material.icons.filled.GridOn
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LinkOff
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
@@ -111,6 +122,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -120,6 +132,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
@@ -169,6 +182,23 @@ enum class ScanType {
     CARD_BACK
 }
 
+enum class ScanMode {
+    SINGLE,
+    BATCH
+}
+
+data class BatchPageItem(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    var originalUri: Uri,
+    var corners: List<Offset> = listOf(Offset(0.05f, 0.05f), Offset(0.95f, 0.05f), Offset(0.95f, 0.95f), Offset(0.05f, 0.95f)),
+    var rotation: Int = 0,
+    var flipHorizontal: Boolean = false,
+    var filterMode: ImageFilterMode = ImageFilterMode.MAGIC_COLOR,
+    var brightness: Float = 0f,
+    var contrast: Float = 1f,
+    var isSelected: Boolean = false
+)
+
 @Composable
 fun DocumentScannerScreen(
     onShowSnackbar: (String) -> Unit,
@@ -194,6 +224,17 @@ fun DocumentScannerScreen(
     var cropImageUri by remember { mutableStateOf<Uri?>(null) }
     var cropImageSide by remember { mutableStateOf(ScanType.CARD_FRONT) }
     var showSingleCardCropEditor by remember { mutableStateOf(false) }
+
+    // Smart Document Scanner Mode and Batch Editor state
+    var activeScanMode by remember { mutableStateOf(ScanMode.SINGLE) }
+    var singleEditorImageUri by remember { mutableStateOf<Uri?>(null) }
+    var showSingleDocEditor by remember { mutableStateOf(false) }
+
+    var batchPages by remember { mutableStateOf<List<BatchPageItem>>(emptyList()) }
+    var showBatchDocEditor by remember { mutableStateOf(false) }
+
+    var isProcessingLoading by remember { mutableStateOf(false) }
+    var loadingProgressMessage by remember { mutableStateOf("প্রসেসিং হচ্ছে...") }
 
     fun loadScannedFiles() {
         coroutineScope.launch(Dispatchers.IO) {
@@ -246,14 +287,27 @@ fun DocumentScannerScreen(
             if (scanningResult != null) {
                 when (pendingScanType) {
                     ScanType.GENERAL -> {
-                        coroutineScope.launch(Dispatchers.IO) {
-                            val savedCount = saveScanningResult(context, scanningResult)
-                            withContext(Dispatchers.Main) {
-                                loadScannedFiles()
-                                if (savedCount > 0) {
-                                    onShowSnackbar("$savedCount টি ডকুমেন্ট সেভ করা হয়েছে!")
-                                } else {
-                                    onShowSnackbar("ডকুমেন্ট সেভ করা সম্ভব হয়নি")
+                        val uris = scanningResult.pages?.mapNotNull { it.imageUri } ?: emptyList()
+                        if (uris.isNotEmpty()) {
+                            if (activeScanMode == ScanMode.SINGLE || uris.size == 1) {
+                                singleEditorImageUri = uris.first()
+                                showSingleDocEditor = true
+                            } else {
+                                isProcessingLoading = true
+                                loadingProgressMessage = "ব্যাচ অটো-ক্রপ প্রসেসিং হচ্ছে..."
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val pages = uris.map { uri ->
+                                        val bitmap = loadBitmapFromUri(context, uri)
+                                        val corners = if (bitmap != null) detectCardCorners(bitmap) else listOf(
+                                            Offset(0.05f, 0.05f), Offset(0.95f, 0.05f), Offset(0.95f, 0.95f), Offset(0.05f, 0.95f)
+                                        )
+                                        BatchPageItem(originalUri = uri, corners = corners)
+                                    }
+                                    withContext(Dispatchers.Main) {
+                                        batchPages = batchPages + pages
+                                        isProcessingLoading = false
+                                        showBatchDocEditor = true
+                                    }
                                 }
                             }
                         }
@@ -294,9 +348,26 @@ fun DocumentScannerScreen(
                         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
                         val destFile = File(destDir, "DOC_$timeStamp.jpg")
                         tempPhotoFile!!.copyTo(destFile, overwrite = true)
+                        val savedUri = Uri.fromFile(destFile)
                         withContext(Dispatchers.Main) {
-                            loadScannedFiles()
-                            onShowSnackbar("ডকুমেন্ট স্ক্যান সম্পন্ন হয়েছে!")
+                            if (activeScanMode == ScanMode.SINGLE) {
+                                singleEditorImageUri = savedUri
+                                showSingleDocEditor = true
+                            } else {
+                                isProcessingLoading = true
+                                loadingProgressMessage = "অটো ডিটেকশন ও ক্রপ হচ্ছে..."
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val bitmap = loadBitmapFromUri(context, savedUri)
+                                    val corners = if (bitmap != null) detectCardCorners(bitmap) else listOf(
+                                        Offset(0.05f, 0.05f), Offset(0.95f, 0.05f), Offset(0.95f, 0.95f), Offset(0.05f, 0.95f)
+                                    )
+                                    withContext(Dispatchers.Main) {
+                                        batchPages = batchPages + BatchPageItem(originalUri = savedUri, corners = corners)
+                                        isProcessingLoading = false
+                                        showBatchDocEditor = true
+                                    }
+                                }
+                            }
                         }
                     }
                     ScanType.CARD_FRONT -> {
@@ -321,6 +392,65 @@ fun DocumentScannerScreen(
                             showSingleCardCropEditor = true
                         }
                     }
+                }
+            }
+        }
+    }
+
+    // Gallery Import Launcher
+    val galleryImagesLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            if (uris.size == 1 && activeScanMode == ScanMode.SINGLE) {
+                singleEditorImageUri = uris[0]
+                showSingleDocEditor = true
+            } else {
+                isProcessingLoading = true
+                loadingProgressMessage = "ইমেজ ইমপোর্ট ও অটো ক্রপ হচ্ছে..."
+                coroutineScope.launch(Dispatchers.IO) {
+                    val newPages = uris.map { uri ->
+                        val bitmap = loadBitmapFromUri(context, uri)
+                        val corners = if (bitmap != null) detectCardCorners(bitmap) else listOf(
+                            Offset(0.05f, 0.05f), Offset(0.95f, 0.05f), Offset(0.95f, 0.95f), Offset(0.05f, 0.95f)
+                        )
+                        BatchPageItem(originalUri = uri, corners = corners)
+                    }
+                    withContext(Dispatchers.Main) {
+                        batchPages = batchPages + newPages
+                        isProcessingLoading = false
+                        showBatchDocEditor = true
+                    }
+                }
+            }
+        }
+    }
+
+    // PDF Import Launcher
+    val pdfImportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            isProcessingLoading = true
+            loadingProgressMessage = "পিডিএফ থেকে পেজ এক্সট্রাক্ট করা হচ্ছে..."
+            coroutineScope.launch(Dispatchers.IO) {
+                val extractedUris = renderPdfPagesToImageUris(context, uri)
+                val newPages = extractedUris.map { imageUri ->
+                    val bitmap = loadBitmapFromUri(context, imageUri)
+                    val corners = if (bitmap != null) detectCardCorners(bitmap) else listOf(
+                        Offset(0.05f, 0.05f), Offset(0.95f, 0.05f), Offset(0.95f, 0.95f), Offset(0.05f, 0.95f)
+                    )
+                    BatchPageItem(originalUri = imageUri, corners = corners)
+                }
+                withContext(Dispatchers.Main) {
+                    if (newPages.isNotEmpty()) {
+                        batchPages = batchPages + newPages
+                        showBatchDocEditor = true
+                        onShowSnackbar("${newPages.size} টি PDF পেজ সফলভাবে ইমপোর্ট করা হয়েছে!")
+                    } else {
+                        onShowSnackbar("PDF থেকে পেজ রিড করতে ব্যর্থ হয়েছে")
+                    }
+                    isProcessingLoading = false
                 }
             }
         }
@@ -471,9 +601,72 @@ fun DocumentScannerScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Option 1: "সাধারণ স্ক্যান" (Single/Multi Page)
+                    // Mode Switcher Selector
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.15f))
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { activeScanMode = ScanMode.SINGLE },
+                            color = if (activeScanMode == ScanMode.SINGLE) Color(0xFF28A745) else Color.Transparent
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Single Mode (একক)",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { activeScanMode = ScanMode.BATCH },
+                            color = if (activeScanMode == ScanMode.BATCH) Color(0xFF28A745) else Color.Transparent
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.GridOn,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Batch Mode (ব্যাচ)",
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Primary Camera Scan Button
                     Button(
                         onClick = { startScan(ScanType.GENERAL) },
                         modifier = Modifier
@@ -499,7 +692,7 @@ fun DocumentScannerScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "সাধারণ স্ক্যান (এক/একাধিক পেজ)",
+                                text = if (activeScanMode == ScanMode.SINGLE) "ক্যামেরা স্ক্যান (একক মোড)" else "ক্যামেরা স্ক্যান (ব্যাচ মোড)",
                                 fontSize = 14.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -507,21 +700,73 @@ fun DocumentScannerScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Option 2: "কার্ড স্ক্যান (সামনে + পেছনে)"
+                    // Import Options Row: Gallery & PDF Import
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { galleryImagesLauncher.launch("image/*") },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.White.copy(alpha = 0.15f),
+                                contentColor = Color.White
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Image,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("ছবি ইমপোর্ট", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        OutlinedButton(
+                            onClick = { pdfImportLauncher.launch("application/pdf") },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.White.copy(alpha = 0.15f),
+                                contentColor = Color.White
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PictureAsPdf,
+                                contentDescription = null,
+                                tint = Color(0xFFFF8A80),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("PDF ইমপোর্ট", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Option: Card Scan (Front + Back)
                     OutlinedButton(
                         onClick = { showCardScanDialog = true },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
+                            .height(42.dp)
                             .testTag("start_card_scan_button"),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.15f),
+                            containerColor = Color.White.copy(alpha = 0.12f),
                             contentColor = Color.White
                         ),
-                        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFD700))
+                        border = androidx.compose.foundation.BorderStroke(1.2.dp, Color(0xFFFFD700))
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -531,12 +776,12 @@ fun DocumentScannerScreen(
                                 imageVector = Icons.Default.CreditCard,
                                 contentDescription = null,
                                 tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "কার্ড স্ক্যান (সামনে + পেছনে)",
-                                fontSize = 14.5.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
@@ -1137,6 +1382,77 @@ fun DocumentScannerScreen(
                 }
             }
         )
+    }
+
+    // Single Document Processing & Editor Modal
+    if (showSingleDocEditor && singleEditorImageUri != null) {
+        SingleDocumentEditorDialog(
+            imageUri = singleEditorImageUri!!,
+            onDismiss = {
+                showSingleDocEditor = false
+                singleEditorImageUri = null
+            },
+            onSave = { savedFile ->
+                showSingleDocEditor = false
+                singleEditorImageUri = null
+                if (savedFile != null) {
+                    loadScannedFiles()
+                    onShowSnackbar("ডকুমেন্ট সফলভাবে সেভ করা হয়েছে!")
+                } else {
+                    onShowSnackbar("ডকুমেন্ট সেভ করা সম্ভব হয়নি")
+                }
+            }
+        )
+    }
+
+    // Batch Document Processing & Editor Modal
+    if (showBatchDocEditor && batchPages.isNotEmpty()) {
+        BatchDocumentEditorDialog(
+            batchPages = batchPages,
+            onDismiss = {
+                showBatchDocEditor = false
+                batchPages = emptyList()
+            },
+            onAddPagesFromCamera = {
+                startScan(ScanType.GENERAL)
+            },
+            onAddPagesFromGallery = {
+                galleryImagesLauncher.launch("image/*")
+            },
+            onSaveBatch = { savedFile ->
+                showBatchDocEditor = false
+                batchPages = emptyList()
+                if (savedFile != null) {
+                    loadScannedFiles()
+                    onShowSnackbar("ব্যাচ ডকুমেন্ট সফলভাবে এক্সপোর্ট করা হয়েছে!")
+                } else {
+                    onShowSnackbar("ব্যাচ ডকুমেন্ট সেভ করতে ব্যর্থ হয়েছে")
+                }
+            }
+        )
+    }
+
+    // Progress Loading Overlay
+    if (isProcessingLoading) {
+        Dialog(
+            onDismissRequest = {},
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White,
+                shadowElevation = 8.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(24.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(color = DarkForestGreen, modifier = Modifier.size(36.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(text = loadingProgressMessage, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
     }
 }
 
@@ -2592,4 +2908,950 @@ fun Context.findActivity(): Activity? {
         ctx = ctx.baseContext
     }
     return null
+}
+
+// PDF Renderer Helper: Extracts all pages of a PDF file into JPEG image URIs
+private suspend fun renderPdfPagesToImageUris(context: Context, pdfUri: Uri): List<Uri> = withContext(Dispatchers.IO) {
+    val uris = mutableListOf<Uri>()
+    try {
+        val pfd: ParcelFileDescriptor? = context.contentResolver.openFileDescriptor(pdfUri, "r")
+        if (pfd != null) {
+            val renderer = PdfRenderer(pfd)
+            val tempDir = File(context.cacheDir, "pdf_extracted_pages")
+            if (!tempDir.exists()) tempDir.mkdirs()
+
+            for (i in 0 until renderer.pageCount) {
+                val page = renderer.openPage(i)
+                val width = (page.width * 2.0).toInt().coerceAtLeast(800)
+                val height = (page.height * 2.0).toInt().coerceAtLeast(1000)
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                canvas.drawColor(android.graphics.Color.WHITE)
+                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                page.close()
+
+                val outFile = File(tempDir, "pdf_page_${System.currentTimeMillis()}_$i.jpg")
+                FileOutputStream(outFile).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+                }
+                uris.add(Uri.fromFile(outFile))
+            }
+            renderer.close()
+            pfd.close()
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    uris
+}
+
+// Render document with perspective correction (warp quad-to-rect), rotation, flip, filter & brightness/contrast
+private suspend fun renderDocumentBitmap(
+    context: Context,
+    imageUri: Uri,
+    cornersNorm: List<Offset>,
+    rotationDeg: Int,
+    flipHorizontal: Boolean,
+    filterMode: ImageFilterMode,
+    brightness: Float,
+    contrast: Float
+): Bitmap? = withContext(Dispatchers.IO) {
+    try {
+        val srcBitmap = loadBitmapFromUri(context, imageUri) ?: return@withContext null
+        val origW = srcBitmap.width.toFloat()
+        val origH = srcBitmap.height.toFloat()
+
+        val tl = Offset(cornersNorm[0].x * origW, cornersNorm[0].y * origH)
+        val tr = Offset(cornersNorm[1].x * origW, cornersNorm[1].y * origH)
+        val br = Offset(cornersNorm[2].x * origW, cornersNorm[2].y * origH)
+        val bl = Offset(cornersNorm[3].x * origW, cornersNorm[3].y * origH)
+
+        val targetWidth = maxOf(
+            Math.hypot((tr.x - tl.x).toDouble(), (tr.y - tl.y).toDouble()),
+            Math.hypot((br.x - bl.x).toDouble(), (br.y - bl.y).toDouble())
+        ).toFloat().coerceAtLeast(100f)
+
+        val targetHeight = maxOf(
+            Math.hypot((bl.x - tl.x).toDouble(), (bl.y - tl.y).toDouble()),
+            Math.hypot((br.y - tr.y).toDouble(), (br.y - tr.y).toDouble())
+        ).toFloat().coerceAtLeast(100f)
+
+        val croppedBitmap = Bitmap.createBitmap(targetWidth.toInt(), targetHeight.toInt(), Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(croppedBitmap)
+
+        val matrix = Matrix()
+        val srcPoints = floatArrayOf(
+            tl.x, tl.y,
+            tr.x, tr.y,
+            br.x, br.y,
+            bl.x, bl.y
+        )
+        val dstPoints = floatArrayOf(
+            0f, 0f,
+            targetWidth, 0f,
+            targetWidth, targetHeight,
+            0f, targetHeight
+        )
+        matrix.setPolyToPoly(srcPoints, 0, dstPoints, 0, 4)
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        canvas.drawBitmap(srcBitmap, matrix, paint)
+
+        val editMatrix = Matrix()
+        if (rotationDeg != 0) {
+            editMatrix.postRotate(rotationDeg.toFloat())
+        }
+        if (flipHorizontal) {
+            editMatrix.postScale(-1f, 1f)
+        }
+
+        val rotatedBitmap = if (!editMatrix.isIdentity) {
+            Bitmap.createBitmap(croppedBitmap, 0, 0, croppedBitmap.width, croppedBitmap.height, editMatrix, true)
+        } else {
+            croppedBitmap
+        }
+
+        val finalBitmap = Bitmap.createBitmap(rotatedBitmap.width, rotatedBitmap.height, Bitmap.Config.ARGB_8888)
+        val filterCanvas = Canvas(finalBitmap)
+
+        val colorMatrix = ColorMatrix()
+        when (filterMode) {
+            ImageFilterMode.MAGIC_COLOR -> {
+                colorMatrix.set(floatArrayOf(
+                    1.2f, 0f, 0f, 0f, -10f,
+                    0f, 1.2f, 0f, 0f, -10f,
+                    0f, 0f, 1.2f, 0f, -10f,
+                    0f, 0f, 0f, 1f, 0f
+                ))
+            }
+            ImageFilterMode.GRAYSCALE -> {
+                colorMatrix.setSaturation(0f)
+            }
+            ImageFilterMode.BLACK_WHITE -> {
+                colorMatrix.set(floatArrayOf(
+                    1.5f, 1.5f, 1.5f, 0f, -160f,
+                    1.5f, 1.5f, 1.5f, 0f, -160f,
+                    1.5f, 1.5f, 1.5f, 0f, -160f,
+                    0f, 0f, 0f, 1f, 0f
+                ))
+            }
+            ImageFilterMode.ORIGINAL -> {}
+        }
+
+        if (brightness != 0f || contrast != 1f) {
+            val cm = ColorMatrix()
+            val c = contrast
+            val b = brightness
+            cm.set(floatArrayOf(
+                c, 0f, 0f, 0f, b,
+                0f, c, 0f, 0f, b,
+                0f, 0f, c, 0f, b,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            colorMatrix.postConcat(cm)
+        }
+
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        filterCanvas.drawBitmap(rotatedBitmap, 0f, 0f, paint)
+
+        finalBitmap
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+// Single Document Save Helper
+private suspend fun saveSingleDocument(
+    context: Context,
+    imageUri: Uri,
+    cornersNorm: List<Offset>,
+    rotationDeg: Int,
+    flipHorizontal: Boolean,
+    filterMode: ImageFilterMode,
+    brightness: Float,
+    contrast: Float,
+    asPdf: Boolean
+): File? = withContext(Dispatchers.IO) {
+    try {
+        val processedBitmap = renderDocumentBitmap(
+            context = context,
+            imageUri = imageUri,
+            cornersNorm = cornersNorm,
+            rotationDeg = rotationDeg,
+            flipHorizontal = flipHorizontal,
+            filterMode = filterMode,
+            brightness = brightness,
+            contrast = contrast
+        ) ?: return@withContext null
+
+        val targetDir = File(context.filesDir, "scanned_documents")
+        if (!targetDir.exists()) targetDir.mkdirs()
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+
+        if (asPdf) {
+            val pdfFile = File(targetDir, "scan_$timestamp.pdf")
+            val pdfDocument = PdfDocument()
+            val pageInfo = PdfDocument.PageInfo.Builder(processedBitmap.width, processedBitmap.height, 1).create()
+            val page = pdfDocument.startPage(pageInfo)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+            page.canvas.drawBitmap(processedBitmap, 0f, 0f, paint)
+            pdfDocument.finishPage(page)
+            FileOutputStream(pdfFile).use { out ->
+                pdfDocument.writeTo(out)
+            }
+            pdfDocument.close()
+            pdfFile
+        } else {
+            val jpgFile = File(targetDir, "scan_$timestamp.jpg")
+            FileOutputStream(jpgFile).use { out ->
+                processedBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+            }
+            jpgFile
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+// Save Multi-Page Batch as PDF
+private suspend fun saveBatchAsPdf(
+    context: Context,
+    pages: List<BatchPageItem>
+): File? = withContext(Dispatchers.IO) {
+    try {
+        val pdfDocument = PdfDocument()
+        val targetDir = File(context.filesDir, "scanned_documents")
+        if (!targetDir.exists()) targetDir.mkdirs()
+
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val pdfFile = File(targetDir, "scan_batch_$timestamp.pdf")
+
+        pages.forEachIndexed { index, pageItem ->
+            val processedBitmap = renderDocumentBitmap(
+                context = context,
+                imageUri = pageItem.originalUri,
+                cornersNorm = pageItem.corners,
+                rotationDeg = pageItem.rotation,
+                flipHorizontal = pageItem.flipHorizontal,
+                filterMode = pageItem.filterMode,
+                brightness = pageItem.brightness,
+                contrast = pageItem.contrast
+            ) ?: return@forEachIndexed
+
+            val pageInfo = PdfDocument.PageInfo.Builder(processedBitmap.width, processedBitmap.height, index + 1).create()
+            val page = pdfDocument.startPage(pageInfo)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+            page.canvas.drawBitmap(processedBitmap, 0f, 0f, paint)
+            pdfDocument.finishPage(page)
+        }
+
+        FileOutputStream(pdfFile).use { out ->
+            pdfDocument.writeTo(out)
+        }
+        pdfDocument.close()
+        pdfFile
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+// Single Document Processing & Editing Dialog
+@Composable
+fun SingleDocumentEditorDialog(
+    imageUri: Uri,
+    onDismiss: () -> Unit,
+    onSave: (File?) -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    var corners by remember {
+        mutableStateOf(
+            listOf(
+                Offset(0.05f, 0.05f),
+                Offset(0.95f, 0.05f),
+                Offset(0.95f, 0.95f),
+                Offset(0.05f, 0.95f)
+            )
+        )
+    }
+
+    var rotation by remember { mutableIntStateOf(0) }
+    var flipHorizontal by remember { mutableStateOf(false) }
+    var filterMode by remember { mutableStateOf(ImageFilterMode.MAGIC_COLOR) }
+    var brightness by remember { mutableFloatStateOf(0f) }
+    var contrast by remember { mutableFloatStateOf(1f) }
+    var isManualCropActive by remember { mutableStateOf(true) }
+    var isSaving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(imageUri) {
+        withContext(Dispatchers.IO) {
+            val bitmap = loadBitmapFromUri(context, imageUri)
+            if (bitmap != null) {
+                val detected = detectCardCorners(bitmap)
+                withContext(Dispatchers.Main) {
+                    corners = detected
+                }
+            }
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color(0xFF181A1B)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Header Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF22252A))
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "পিছনে", tint = Color.White)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "ডকুমেন্ট প্রসেসিং & এডিটর",
+                            color = Color.White,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    if (isSaving) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    }
+                }
+
+                // Interactive Document Preview & Edge Dragger Canvas
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    var boxSizePx by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onGloballyPositioned { coordinates ->
+                                boxSizePx = coordinates.size.toSize()
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = "Document Preview",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    rotationZ = rotation.toFloat()
+                                    scaleX = if (flipHorizontal) -1f else 1f
+                                }
+                        )
+
+                        // Perspective Quad Wireframe & 4 Corner Drag Handles Overlay
+                        if (isManualCropActive && boxSizePx.width > 0 && boxSizePx.height > 0) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val w = boxSizePx.width
+                                val h = boxSizePx.height
+
+                                val pt0 = Offset(corners[0].x * w, corners[0].y * h)
+                                val pt1 = Offset(corners[1].x * w, corners[1].y * h)
+                                val pt2 = Offset(corners[2].x * w, corners[2].y * h)
+                                val pt3 = Offset(corners[3].x * w, corners[3].y * h)
+
+                                val path = Path().apply {
+                                    moveTo(pt0.x, pt0.y)
+                                    lineTo(pt1.x, pt1.y)
+                                    lineTo(pt2.x, pt2.y)
+                                    lineTo(pt3.x, pt3.y)
+                                    close()
+                                }
+
+                                drawPath(
+                                    path = path,
+                                    color = Color(0xFF00FF88).copy(alpha = 0.35f)
+                                )
+                                drawPath(
+                                    path = path,
+                                    color = Color(0xFF00FF88),
+                                    style = Stroke(width = 4.dp.toPx())
+                                )
+                            }
+
+                            // Interactive Dragger Nodes
+                            val w = boxSizePx.width
+                            val h = boxSizePx.height
+
+                            val currentCorners = corners.toMutableList()
+
+                            listOf(0, 1, 2, 3).forEach { index ->
+                                val handlePos = Offset(currentCorners[index].x * w, currentCorners[index].y * h)
+
+                                Box(
+                                    modifier = Modifier
+                                        .offset {
+                                            IntOffset(
+                                                (handlePos.x - 24.dp.toPx()).roundToInt(),
+                                                (handlePos.y - 24.dp.toPx()).roundToInt()
+                                            )
+                                        }
+                                        .size(48.dp)
+                                        .pointerInput(Unit) {
+                                            detectDragGestures { change, dragAmount ->
+                                                change.consume()
+                                                val newX = (handlePos.x + dragAmount.x) / w
+                                                val newY = (handlePos.y + dragAmount.y) / h
+                                                val clamped = Offset(newX.coerceIn(0f, 1f), newY.coerceIn(0f, 1f))
+                                                val updated = currentCorners.toMutableList()
+                                                updated[index] = clamped
+                                                corners = updated
+                                            }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(0xFF00FF88),
+                                        border = androidx.compose.foundation.BorderStroke(2.dp, Color.White),
+                                        modifier = Modifier.size(28.dp)
+                                    ) {}
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Toolbar Section (Auto Crop, Manual Crop, Rotate, Flip)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF22252A))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val bitmap = loadBitmapFromUri(context, imageUri)
+                                    if (bitmap != null) {
+                                        val autoDetected = detectCardCorners(bitmap)
+                                        withContext(Dispatchers.Main) { corners = autoDetected }
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00FF88))
+                        ) {
+                            Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = Color(0xFF00FF88), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("অটো ক্রপ", color = Color(0xFF00FF88), fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = { isManualCropActive = !isManualCropActive },
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (isManualCropActive) Color(0xFF00FF88) else Color.Gray)
+                        ) {
+                            Icon(Icons.Default.Crop, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("ম্যানুয়াল ক্রপ", color = Color.White, fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                corners = listOf(
+                                    Offset(0f, 0f),
+                                    Offset(1f, 0f),
+                                    Offset(1f, 1f),
+                                    Offset(0f, 1f)
+                                )
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
+                        ) {
+                            Text("ফুল ইমেজ", color = Color.White, fontSize = 12.sp)
+                        }
+
+                        IconButton(onClick = { rotation = (rotation + 90) % 360 }) {
+                            Icon(Icons.Default.RotateRight, contentDescription = "ঘোরাও", tint = Color.White)
+                        }
+
+                        IconButton(onClick = { flipHorizontal = !flipHorizontal }) {
+                            Icon(Icons.Default.Flip, contentDescription = "ফ্লিপ", tint = Color.White)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Color Filters Row
+                    Text("কালার ফিল্টার সিলেক্ট করুন:", color = Color.LightGray, fontSize = 11.5.sp, modifier = Modifier.padding(bottom = 6.dp))
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val filterOptions = listOf(
+                            ImageFilterMode.MAGIC_COLOR to "ম্যাজিক কালার",
+                            ImageFilterMode.ORIGINAL to "অরিজিনাল",
+                            ImageFilterMode.GRAYSCALE to "গ্রে-স্কেল",
+                            ImageFilterMode.BLACK_WHITE to "ব্ল্যাক & হোয়াইট"
+                        )
+
+                        items(filterOptions.size) { index ->
+                            val (mode, label) = filterOptions[index]
+                            val isSelected = filterMode == mode
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isSelected) Color(0xFF28A745) else Color(0xFF333842),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { filterMode = mode }
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 12.sp,
+                                    color = Color.White,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Adjustments (Brightness & Contrast Sliders)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("ব্রাইটনেস:", color = Color.Gray, fontSize = 11.sp, modifier = Modifier.width(65.dp))
+                        Slider(
+                            value = brightness,
+                            onValueChange = { brightness = it },
+                            valueRange = -80f..80f,
+                            modifier = Modifier.weight(1f),
+                            colors = SliderDefaults.colors(thumbColor = Color(0xFF28A745), activeTrackColor = Color(0xFF28A745))
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("কনট্রাস্ট:", color = Color.Gray, fontSize = 11.sp, modifier = Modifier.width(65.dp))
+                        Slider(
+                            value = contrast,
+                            onValueChange = { contrast = it },
+                            valueRange = 0.5f..1.5f,
+                            modifier = Modifier.weight(1f),
+                            colors = SliderDefaults.colors(thumbColor = Color(0xFF28A745), activeTrackColor = Color(0xFF28A745))
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Final Action Buttons (Save JPG / PDF)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                isSaving = true
+                                coroutineScope.launch {
+                                    val saved = saveSingleDocument(
+                                        context = context,
+                                        imageUri = imageUri,
+                                        cornersNorm = corners,
+                                        rotationDeg = rotation,
+                                        flipHorizontal = flipHorizontal,
+                                        filterMode = filterMode,
+                                        brightness = brightness,
+                                        contrast = contrast,
+                                        asPdf = false
+                                    )
+                                    isSaving = false
+                                    onSave(saved)
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28A745))
+                        ) {
+                            Icon(Icons.Default.Save, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("JPG সেভ করুন", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = {
+                                isSaving = true
+                                coroutineScope.launch {
+                                    val saved = saveSingleDocument(
+                                        context = context,
+                                        imageUri = imageUri,
+                                        cornersNorm = corners,
+                                        rotationDeg = rotation,
+                                        flipHorizontal = flipHorizontal,
+                                        filterMode = filterMode,
+                                        brightness = brightness,
+                                        contrast = contrast,
+                                        asPdf = true
+                                    )
+                                    isSaving = false
+                                    onSave(saved)
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen)
+                        ) {
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color(0xFFFF8A80), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("PDF এক্সপোর্ট", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Batch Document Processing & Multi-Page PDF Editor Dialog
+@Composable
+fun BatchDocumentEditorDialog(
+    batchPages: List<BatchPageItem>,
+    onDismiss: () -> Unit,
+    onAddPagesFromCamera: () -> Unit,
+    onAddPagesFromGallery: () -> Unit,
+    onSaveBatch: (File?) -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    var pagesState by remember { mutableStateOf(batchPages) }
+    var editingPageIndex by remember { mutableStateOf<Int?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(batchPages) {
+        pagesState = batchPages
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color(0xFFF4F6F8)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Header Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(DarkForestGreen)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "পিছনে", tint = Color.White)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "ব্যাচ ডকুমেন্ট এডিটর",
+                                color = Color.White,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "মোট ${pagesState.size} টি পেজ যুক্ত আছে",
+                                color = Color(0xFFE2D6C5),
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+
+                    if (isSaving) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    }
+                }
+
+                // Batch Operations Bar (Add Pages, Global Rotation, Global Filter)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = onAddPagesFromCamera,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("+ ক্যামেরা", fontSize = 12.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = onAddPagesFromGallery,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("+ গ্যালারি", fontSize = 12.sp)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    pagesState = pagesState.map {
+                                        it.copy(filterMode = ImageFilterMode.MAGIC_COLOR)
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = DarkForestGreen, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("সব পেজে ম্যাজিক কালার", fontSize = 11.5.sp, color = DarkForestGreen)
+                            }
+
+                            TextButton(
+                                onClick = {
+                                    pagesState = pagesState.map {
+                                        it.copy(rotation = (it.rotation + 90) % 360)
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Default.RotateRight, contentDescription = null, tint = DarkForestGreen, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("সব ঘোরাও", fontSize = 11.5.sp, color = DarkForestGreen)
+                            }
+                        }
+                    }
+                }
+
+                // Batch Thumbnail List with Reorder, Individual Edit, and Actions
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    items(pagesState.size) { index ->
+                        val item = pagesState[index]
+
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "পেজ ${BengaliUtils.toBengaliDigits((index + 1).toString())}",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.5.sp,
+                                        color = DarkForestGreen
+                                    )
+
+                                    Row {
+                                        if (index > 0) {
+                                            IconButton(
+                                                onClick = {
+                                                    val mutable = pagesState.toMutableList()
+                                                    val temp = mutable[index]
+                                                    mutable[index] = mutable[index - 1]
+                                                    mutable[index - 1] = temp
+                                                    pagesState = mutable
+                                                },
+                                                modifier = Modifier.size(24.dp)
+                                            ) {
+                                                Icon(Icons.Default.ArrowUpward, contentDescription = "উপরে", modifier = Modifier.size(14.dp))
+                                            }
+                                        }
+
+                                        if (index < pagesState.size - 1) {
+                                            IconButton(
+                                                onClick = {
+                                                    val mutable = pagesState.toMutableList()
+                                                    val temp = mutable[index]
+                                                    mutable[index] = mutable[index + 1]
+                                                    mutable[index + 1] = temp
+                                                    pagesState = mutable
+                                                },
+                                                modifier = Modifier.size(24.dp)
+                                            ) {
+                                                Icon(Icons.Default.ArrowDownward, contentDescription = "নিচে", modifier = Modifier.size(14.dp))
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(130.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFFEEEEEE)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AsyncImage(
+                                        model = item.originalUri,
+                                        contentDescription = "Page $index",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .graphicsLayer {
+                                                rotationZ = item.rotation.toFloat()
+                                            }
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { editingPageIndex = index },
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                        modifier = Modifier.height(30.dp),
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Icon(Icons.Default.Crop, contentDescription = null, modifier = Modifier.size(12.dp))
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text("এডিট", fontSize = 10.5.sp)
+                                    }
+
+                                    IconButton(
+                                        onClick = {
+                                            val mutable = pagesState.toMutableList()
+                                            mutable[index] = item.copy(rotation = (item.rotation + 90) % 360)
+                                            pagesState = mutable
+                                        },
+                                        modifier = Modifier.size(30.dp)
+                                    ) {
+                                        Icon(Icons.Default.RotateRight, contentDescription = "Rotate", modifier = Modifier.size(16.dp))
+                                    }
+
+                                    IconButton(
+                                        onClick = {
+                                            val mutable = pagesState.toMutableList()
+                                            mutable.removeAt(index)
+                                            pagesState = mutable
+                                        },
+                                        modifier = Modifier.size(30.dp)
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red, modifier = Modifier.size(16.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Bottom Export Bar
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 8.dp,
+                    color = Color.White
+                ) {
+                    Box(modifier = Modifier.padding(14.dp)) {
+                        Button(
+                            onClick = {
+                                isSaving = true
+                                coroutineScope.launch {
+                                    val savedPdf = saveBatchAsPdf(context, pagesState)
+                                    isSaving = false
+                                    onSaveBatch(savedPdf)
+                                }
+                            },
+                            enabled = pagesState.isNotEmpty(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = DarkForestGreen)
+                        ) {
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color(0xFFFF8A80), modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "সবগুলো পেজ (${pagesState.size} টি) দিয়ে PDF তৈরি করুন",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Individual Page Crop/Filter Modal within Batch Mode
+    editingPageIndex?.let { idx ->
+        if (idx in pagesState.indices) {
+            val pageItem = pagesState[idx]
+            SingleDocumentEditorDialog(
+                imageUri = pageItem.originalUri,
+                onDismiss = { editingPageIndex = null },
+                onSave = { _ ->
+                    editingPageIndex = null
+                }
+            )
+        }
+    }
 }
