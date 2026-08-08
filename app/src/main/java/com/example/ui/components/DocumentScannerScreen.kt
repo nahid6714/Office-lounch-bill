@@ -30,6 +30,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -924,7 +925,7 @@ fun DocumentScannerScreen(
             frontUri = cardFrontUri!!,
             backUri = cardBackUri!!,
             onDismiss = { showCardLayoutEditor = false },
-            onSave = { asPdf, frontRect, backRect, frontRot, backRot, canvasSize ->
+            onSave = { asPdf, frontRect, backRect, frontRot, backRot, filterMode, canvasSize ->
                 coroutineScope.launch(Dispatchers.IO) {
                     val savedFile = renderAndSaveCardLayout(
                         context = context,
@@ -934,6 +935,7 @@ fun DocumentScannerScreen(
                         backRect = backRect,
                         frontRotation = frontRot,
                         backRotation = backRot,
+                        filterMode = filterMode,
                         canvasSizeDp = canvasSize,
                         asPdf = asPdf
                     )
@@ -1160,6 +1162,7 @@ fun CardLayoutEditorDialog(
         backRect: CardRectState,
         frontRotation: Int,
         backRotation: Int,
+        filterMode: ImageFilterMode,
         canvasSize: androidx.compose.ui.geometry.Size
     ) -> Unit
 ) {
@@ -1186,6 +1189,33 @@ fun CardLayoutEditorDialog(
     var isSizeLinked by remember { mutableStateOf(true) }
     var sharedScale by remember { mutableFloatStateOf(1.0f) }
 
+    var filterMode by remember { mutableStateOf(ImageFilterMode.MAGIC_COLOR) }
+
+    val magicColorMatrix = remember {
+        androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
+            1.2f, 0f, 0f, 0f, -10f,
+            0f, 1.2f, 0f, 0f, -10f,
+            0f, 0f, 1.2f, 0f, -10f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+    }
+    val grayscaleMatrix = remember { androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) } }
+    val bwMatrix = remember {
+        androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
+            1.5f, 1.5f, 1.5f, 0f, -160f,
+            1.5f, 1.5f, 1.5f, 0f, -160f,
+            1.5f, 1.5f, 1.5f, 0f, -160f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+    }
+
+    val activeColorFilter = when (filterMode) {
+        ImageFilterMode.MAGIC_COLOR -> androidx.compose.ui.graphics.ColorFilter.colorMatrix(magicColorMatrix)
+        ImageFilterMode.GRAYSCALE -> androidx.compose.ui.graphics.ColorFilter.colorMatrix(grayscaleMatrix)
+        ImageFilterMode.BLACK_WHITE -> androidx.compose.ui.graphics.ColorFilter.colorMatrix(bwMatrix)
+        ImageFilterMode.ORIGINAL -> null
+    }
+
     fun resetLayout() {
         frontX = 30f
         frontY = 30f
@@ -1199,6 +1229,7 @@ fun CardLayoutEditorDialog(
 
         isSizeLinked = true
         sharedScale = 1.0f
+        filterMode = ImageFilterMode.MAGIC_COLOR
     }
 
     Dialog(
@@ -1293,6 +1324,7 @@ fun CardLayoutEditorDialog(
                                 model = frontUri,
                                 contentDescription = "Front Card",
                                 contentScale = ContentScale.Crop,
+                                colorFilter = activeColorFilter,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .graphicsLayer { rotationZ = frontRotation.toFloat() }
@@ -1333,6 +1365,7 @@ fun CardLayoutEditorDialog(
                                 model = backUri,
                                 contentDescription = "Back Card",
                                 contentScale = ContentScale.Crop,
+                                colorFilter = activeColorFilter,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .graphicsLayer { rotationZ = backRotation.toFloat() }
@@ -1360,6 +1393,38 @@ fun CardLayoutEditorDialog(
                             .fillMaxWidth()
                             .padding(14.dp)
                     ) {
+                        // Color Filter Options
+                        Text("কালার ফিল্টার (Color Filter):", fontSize = 11.5.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(
+                                ImageFilterMode.MAGIC_COLOR to "ম্যাজিক কালার",
+                                ImageFilterMode.ORIGINAL to "অরিজিনাল",
+                                ImageFilterMode.GRAYSCALE to "গ্রে-স্কেল",
+                                ImageFilterMode.BLACK_WHITE to "ব্ল্যাক & হোয়াইট"
+                            ).forEach { (mode, label) ->
+                                val isSelected = filterMode == mode
+                                Button(
+                                    onClick = { filterMode = mode },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSelected) DarkForestGreen else Color(0xFF383838),
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(20.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                ) {
+                                    Text(label, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
                         // Link Size Toggle & Sliders
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1489,7 +1554,31 @@ fun CardLayoutEditorDialog(
                             ) {
                                 Icon(Icons.Default.FormatAlignCenter, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("মাঝখানে", fontSize = 11.5.sp)
+                                Text("উভয় সেন্টার (Center)", fontSize = 11.5.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    val fW = baseCardWidth * (if (isSizeLinked) sharedScale else frontScale)
+                                    frontX = (canvasWidthDp - fW) / 2f
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Icon(Icons.Default.FormatAlignCenter, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("সামনে সেন্টার", fontSize = 11.5.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    val bW = baseCardWidth * (if (isSizeLinked) sharedScale else backScale)
+                                    backX = (canvasWidthDp - bW) / 2f
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Icon(Icons.Default.FormatAlignCenter, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("পেছনে সেন্টার", fontSize = 11.5.sp)
                             }
 
                             OutlinedButton(
@@ -1532,7 +1621,7 @@ fun CardLayoutEditorDialog(
                                     val actBackScale = if (isSizeLinked) sharedScale else backScale
                                     val frontState = CardRectState(frontX, frontY, baseCardWidth, baseCardHeight, actFrontScale)
                                     val backState = CardRectState(backX, backY, baseCardWidth, baseCardHeight, actBackScale)
-                                    onSave(false, frontState, backState, frontRotation, backRotation, androidx.compose.ui.geometry.Size(canvasWidthDp, canvasHeightDp))
+                                    onSave(false, frontState, backState, frontRotation, backRotation, filterMode, androidx.compose.ui.geometry.Size(canvasWidthDp, canvasHeightDp))
                                 },
                                 modifier = Modifier
                                     .weight(1f)
@@ -1549,7 +1638,7 @@ fun CardLayoutEditorDialog(
                                     val actBackScale = if (isSizeLinked) sharedScale else backScale
                                     val frontState = CardRectState(frontX, frontY, baseCardWidth, baseCardHeight, actFrontScale)
                                     val backState = CardRectState(backX, backY, baseCardWidth, baseCardHeight, actBackScale)
-                                    onSave(true, frontState, backState, frontRotation, backRotation, androidx.compose.ui.geometry.Size(canvasWidthDp, canvasHeightDp))
+                                    onSave(true, frontState, backState, frontRotation, backRotation, filterMode, androidx.compose.ui.geometry.Size(canvasWidthDp, canvasHeightDp))
                                 },
                                 modifier = Modifier
                                     .weight(1f)
@@ -1565,6 +1654,69 @@ fun CardLayoutEditorDialog(
             }
         }
     }
+}
+
+private fun detectCardCorners(bitmap: Bitmap): List<Offset> {
+    val origW = bitmap.width
+    val origH = bitmap.height
+    if (origW <= 0 || origH <= 0) {
+        return listOf(Offset(0.05f, 0.05f), Offset(0.95f, 0.05f), Offset(0.95f, 0.95f), Offset(0.05f, 0.95f))
+    }
+
+    val maxDim = 250
+    val scale = minOf(1.0f, maxDim.toFloat() / maxOf(origW, origH))
+    val sampleW = (origW * scale).toInt().coerceAtLeast(10)
+    val sampleH = (origH * scale).toInt().coerceAtLeast(10)
+
+    val scaledBitmap = Bitmap.createScaledBitmap(bitmap, sampleW, sampleH, false)
+    val pixels = IntArray(sampleW * sampleH)
+    scaledBitmap.getPixels(pixels, 0, sampleW, 0, 0, sampleW, sampleH)
+
+    val lum = IntArray(sampleW * sampleH)
+    for (i in pixels.indices) {
+        val color = pixels[i]
+        val r = (color shr 16) and 0xFF
+        val g = (color shr 8) and 0xFF
+        val b = color and 0xFF
+        lum[i] = (0.299 * r + 0.587 * g + 0.114 * b).toInt()
+    }
+
+    var minX = sampleW
+    var maxX = 0
+    var minY = sampleH
+    var maxY = 0
+    var edgeCount = 0
+
+    val edgeThreshold = 30
+
+    for (y in 2 until sampleH - 2) {
+        for (x in 2 until sampleW - 2) {
+            val gx = Math.abs(lum[y * sampleW + (x + 1)] - lum[y * sampleW + (x - 1)])
+            val gy = Math.abs(lum[(y + 1) * sampleW + x] - lum[(y - 1) * sampleW + x])
+            if (gx + gy > edgeThreshold) {
+                if (x < minX) minX = x
+                if (x > maxX) maxX = x
+                if (y < minY) minY = y
+                if (y > maxY) maxY = y
+                edgeCount++
+            }
+        }
+    }
+
+    if (edgeCount > 40 && maxX > minX + 25 && maxY > minY + 25) {
+        val normTL = Offset((minX.toFloat() / sampleW).coerceIn(0.02f, 0.35f), (minY.toFloat() / sampleH).coerceIn(0.02f, 0.35f))
+        val normTR = Offset((maxX.toFloat() / sampleW).coerceIn(0.65f, 0.98f), (minY.toFloat() / sampleH).coerceIn(0.02f, 0.35f))
+        val normBR = Offset((maxX.toFloat() / sampleW).coerceIn(0.65f, 0.98f), (maxY.toFloat() / sampleH).coerceIn(0.65f, 0.98f))
+        val normBL = Offset((minX.toFloat() / sampleW).coerceIn(0.02f, 0.35f), (maxY.toFloat() / sampleH).coerceIn(0.65f, 0.98f))
+        return listOf(normTL, normTR, normBR, normBL)
+    }
+
+    return listOf(
+        Offset(0.05f, 0.05f),
+        Offset(0.95f, 0.05f),
+        Offset(0.95f, 0.95f),
+        Offset(0.05f, 0.95f)
+    )
 }
 
 @Composable
@@ -1588,6 +1740,22 @@ fun SingleCardCropEditorDialog(
     var cornerTR by remember { mutableStateOf(Offset(0.95f, 0.05f)) }
     var cornerBR by remember { mutableStateOf(Offset(0.95f, 0.95f)) }
     var cornerBL by remember { mutableStateOf(Offset(0.05f, 0.95f)) }
+
+    // Run auto card edge detection as soon as dialog opens
+    LaunchedEffect(imageUri) {
+        withContext(Dispatchers.IO) {
+            val bitmap = loadBitmapFromUri(context, imageUri)
+            if (bitmap != null) {
+                val detected = detectCardCorners(bitmap)
+                withContext(Dispatchers.Main) {
+                    cornerTL = detected[0]
+                    cornerTR = detected[1]
+                    cornerBR = detected[2]
+                    cornerBL = detected[3]
+                }
+            }
+        }
+    }
 
     fun resetAll() {
         rotation = 0
@@ -1795,10 +1963,25 @@ fun SingleCardCropEditorDialog(
                     ) {
                         OutlinedButton(
                             onClick = {
-                                cornerTL = Offset(0.05f, 0.05f)
-                                cornerTR = Offset(0.95f, 0.05f)
-                                cornerBR = Offset(0.95f, 0.95f)
-                                cornerBL = Offset(0.05f, 0.95f)
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val bitmap = loadBitmapFromUri(context, imageUri)
+                                    if (bitmap != null) {
+                                        val detected = detectCardCorners(bitmap)
+                                        withContext(Dispatchers.Main) {
+                                            cornerTL = detected[0]
+                                            cornerTR = detected[1]
+                                            cornerBR = detected[2]
+                                            cornerBL = detected[3]
+                                        }
+                                    } else {
+                                        withContext(Dispatchers.Main) {
+                                            cornerTL = Offset(0.05f, 0.05f)
+                                            cornerTR = Offset(0.95f, 0.05f)
+                                            cornerBR = Offset(0.95f, 0.95f)
+                                            cornerBL = Offset(0.05f, 0.95f)
+                                        }
+                                    }
+                                }
                             },
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                         ) {
@@ -2246,6 +2429,7 @@ private suspend fun renderAndSaveCardLayout(
     backRect: CardRectState,
     frontRotation: Int = 0,
     backRotation: Int = 0,
+    filterMode: ImageFilterMode = ImageFilterMode.ORIGINAL,
     canvasSizeDp: androidx.compose.ui.geometry.Size,
     asPdf: Boolean
 ): File? = withContext(Dispatchers.IO) {
@@ -2258,6 +2442,35 @@ private suspend fun renderAndSaveCardLayout(
         canvas.drawColor(android.graphics.Color.WHITE)
 
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+
+        val colorMatrix = android.graphics.ColorMatrix()
+        when (filterMode) {
+            ImageFilterMode.MAGIC_COLOR -> {
+                colorMatrix.set(floatArrayOf(
+                    1.2f, 0f, 0f, 0f, -10f,
+                    0f, 1.2f, 0f, 0f, -10f,
+                    0f, 0f, 1.2f, 0f, -10f,
+                    0f, 0f, 0f, 1f, 0f
+                ))
+                paint.colorFilter = android.graphics.ColorMatrixColorFilter(colorMatrix)
+            }
+            ImageFilterMode.GRAYSCALE -> {
+                colorMatrix.setSaturation(0f)
+                paint.colorFilter = android.graphics.ColorMatrixColorFilter(colorMatrix)
+            }
+            ImageFilterMode.BLACK_WHITE -> {
+                colorMatrix.set(floatArrayOf(
+                    1.5f, 1.5f, 1.5f, 0f, -160f,
+                    1.5f, 1.5f, 1.5f, 0f, -160f,
+                    1.5f, 1.5f, 1.5f, 0f, -160f,
+                    0f, 0f, 0f, 1f, 0f
+                ))
+                paint.colorFilter = android.graphics.ColorMatrixColorFilter(colorMatrix)
+            }
+            ImageFilterMode.ORIGINAL -> {
+                paint.colorFilter = null
+            }
+        }
 
         var frontBitmap = loadBitmapFromUri(context, frontUri)
         var backBitmap = loadBitmapFromUri(context, backUri)
