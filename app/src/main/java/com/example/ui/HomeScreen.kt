@@ -498,6 +498,7 @@ fun HomeScreen(
     if (showPreviewDialog) {
         VoucherPreviewDialog(
             state = currentBillState,
+            appLanguage = appLanguage,
             onDismiss = { showPreviewDialog = false },
             onPrint = { pos ->
                 val validItems = currentBillState.items.filter { it.name.isNotBlank() || it.amount > 0 }
@@ -509,7 +510,8 @@ fun HomeScreen(
                     items = validItems,
                     totalAmount = currentBillState.totalAmount,
                     purchaserLabel = currentBillState.purchaserLabel,
-                    position = pos
+                    position = pos,
+                    isEnglish = (appLanguage == "en")
                 )
             },
             onSharePdf = { pos ->
@@ -522,7 +524,8 @@ fun HomeScreen(
                     items = validItems,
                     totalAmount = currentBillState.totalAmount,
                     purchaserLabel = currentBillState.purchaserLabel,
-                    position = pos
+                    position = pos,
+                    isEnglish = (appLanguage == "en")
                 )
             }
         )
