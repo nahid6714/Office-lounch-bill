@@ -189,6 +189,11 @@ fun DocumentScannerScreen(
     var showCardLayoutEditor by remember { mutableStateOf(false) }
     var showPermissionDeniedDialog by remember { mutableStateOf(false) }
 
+    // Single Card Crop Editor state
+    var cropImageUri by remember { mutableStateOf<Uri?>(null) }
+    var cropImageSide by remember { mutableStateOf(ScanType.CARD_FRONT) }
+    var showSingleCardCropEditor by remember { mutableStateOf(false) }
+
     fun loadScannedFiles() {
         coroutineScope.launch(Dispatchers.IO) {
             val dir = File(context.filesDir, "scanned_documents")
@@ -255,15 +260,17 @@ fun DocumentScannerScreen(
                     ScanType.CARD_FRONT -> {
                         val uri = scanningResult.pages?.firstOrNull()?.imageUri
                         if (uri != null) {
-                            cardFrontUri = uri
-                            onShowSnackbar("সামনের পাশ স্ক্যান সম্পন্ন!")
+                            cropImageUri = uri
+                            cropImageSide = ScanType.CARD_FRONT
+                            showSingleCardCropEditor = true
                         }
                     }
                     ScanType.CARD_BACK -> {
                         val uri = scanningResult.pages?.firstOrNull()?.imageUri
                         if (uri != null) {
-                            cardBackUri = uri
-                            onShowSnackbar("পেছনের পাশ স্ক্যান সম্পন্ন!")
+                            cropImageUri = uri
+                            cropImageSide = ScanType.CARD_BACK
+                            showSingleCardCropEditor = true
                         }
                     }
                 }
@@ -297,8 +304,9 @@ fun DocumentScannerScreen(
                         tempPhotoFile!!.copyTo(destFile, overwrite = true)
                         val savedUri = Uri.fromFile(destFile)
                         withContext(Dispatchers.Main) {
-                            cardFrontUri = savedUri
-                            onShowSnackbar("সামনের পাশ স্ক্যান সম্পন্ন!")
+                            cropImageUri = savedUri
+                            cropImageSide = ScanType.CARD_FRONT
+                            showSingleCardCropEditor = true
                         }
                     }
                     ScanType.CARD_BACK -> {
@@ -307,8 +315,9 @@ fun DocumentScannerScreen(
                         tempPhotoFile!!.copyTo(destFile, overwrite = true)
                         val savedUri = Uri.fromFile(destFile)
                         withContext(Dispatchers.Main) {
-                            cardBackUri = savedUri
-                            onShowSnackbar("পেছনের পাশ স্ক্যান সম্পন্ন!")
+                            cropImageUri = savedUri
+                            cropImageSide = ScanType.CARD_BACK
+                            showSingleCardCropEditor = true
                         }
                     }
                 }
@@ -874,13 +883,48 @@ fun DocumentScannerScreen(
         }
     }
 
+    // Single Card Crop Editor Modal
+    if (showSingleCardCropEditor && cropImageUri != null) {
+        SingleCardCropEditorDialog(
+            imageUri = cropImageUri!!,
+            sideTitle = if (cropImageSide == ScanType.CARD_FRONT) "সামনের পাশ (Front Side)" else "পেছনের পাশ (Back Side)",
+            onDismiss = {
+                showSingleCardCropEditor = false
+                cropImageUri = null
+            },
+            onConfirm = { processedUri ->
+                showSingleCardCropEditor = false
+                cropImageUri = null
+                if (cropImageSide == ScanType.CARD_FRONT) {
+                    cardFrontUri = processedUri
+                    onShowSnackbar("সামনের পাশ স্ক্যান ও ক্রপ সম্পন্ন!")
+                    if (cardBackUri == null) {
+                        showCardScanDialog = true
+                    } else {
+                        showCardScanDialog = false
+                        showCardLayoutEditor = true
+                    }
+                } else {
+                    cardBackUri = processedUri
+                    onShowSnackbar("পেছনের পাশ স্ক্যান ও ক্রপ সম্পন্ন!")
+                    if (cardFrontUri != null) {
+                        showCardScanDialog = false
+                        showCardLayoutEditor = true
+                    } else {
+                        showCardScanDialog = true
+                    }
+                }
+            }
+        )
+    }
+
     // Full Screen Card Layout Editor
     if (showCardLayoutEditor && cardFrontUri != null && cardBackUri != null) {
         CardLayoutEditorDialog(
             frontUri = cardFrontUri!!,
             backUri = cardBackUri!!,
             onDismiss = { showCardLayoutEditor = false },
-            onSave = { asPdf, frontRect, backRect, canvasSize ->
+            onSave = { asPdf, frontRect, backRect, frontRot, backRot, canvasSize ->
                 coroutineScope.launch(Dispatchers.IO) {
                     val savedFile = renderAndSaveCardLayout(
                         context = context,
@@ -888,6 +932,8 @@ fun DocumentScannerScreen(
                         backUri = cardBackUri!!,
                         frontRect = frontRect,
                         backRect = backRect,
+                        frontRotation = frontRot,
+                        backRotation = backRot,
                         canvasSizeDp = canvasSize,
                         asPdf = asPdf
                     )
@@ -1108,7 +1154,14 @@ fun CardLayoutEditorDialog(
     frontUri: Uri,
     backUri: Uri,
     onDismiss: () -> Unit,
-    onSave: (asPdf: Boolean, frontRect: CardRectState, backRect: CardRectState, canvasSize: androidx.compose.ui.geometry.Size) -> Unit
+    onSave: (
+        asPdf: Boolean,
+        frontRect: CardRectState,
+        backRect: CardRectState,
+        frontRotation: Int,
+        backRotation: Int,
+        canvasSize: androidx.compose.ui.geometry.Size
+    ) -> Unit
 ) {
     val density = LocalDensity.current.density
 
@@ -1123,19 +1176,29 @@ fun CardLayoutEditorDialog(
     var frontX by remember { mutableFloatStateOf(30f) }
     var frontY by remember { mutableFloatStateOf(30f) }
     var frontScale by remember { mutableFloatStateOf(1.0f) }
+    var frontRotation by remember { mutableIntStateOf(0) }
 
     var backX by remember { mutableFloatStateOf(30f) }
     var backY by remember { mutableFloatStateOf(230f) }
     var backScale by remember { mutableFloatStateOf(1.0f) }
+    var backRotation by remember { mutableIntStateOf(0) }
+
+    var isSizeLinked by remember { mutableStateOf(true) }
+    var sharedScale by remember { mutableFloatStateOf(1.0f) }
 
     fun resetLayout() {
         frontX = 30f
         frontY = 30f
         frontScale = 1.0f
+        frontRotation = 0
 
         backX = 30f
         backY = 230f
         backScale = 1.0f
+        backRotation = 0
+
+        isSizeLinked = true
+        sharedScale = 1.0f
     }
 
     Dialog(
@@ -1146,9 +1209,7 @@ fun CardLayoutEditorDialog(
             modifier = Modifier.fillMaxSize(),
             color = Color(0xFF1E1E1E)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 // Header
                 Row(
                     modifier = Modifier
@@ -1189,22 +1250,6 @@ fun CardLayoutEditorDialog(
                     }
                 }
 
-                // Instruction Bar
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF2D2D2D))
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "ছবি চেপে ধরে ড্র্যাগ করে পছন্দমতো পজিশনে বসান এবং সাইজ এডজাস্ট করুন",
-                        fontSize = 11.5.sp,
-                        color = Color.LightGray,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
                 // Page Canvas Area
                 Box(
                     modifier = Modifier
@@ -1223,8 +1268,9 @@ fun CardLayoutEditorDialog(
                             .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
                     ) {
                         // Front Card Box
-                        val currentFrontW = baseCardWidth * frontScale
-                        val currentFrontH = baseCardHeight * frontScale
+                        val activeFrontScale = if (isSizeLinked) sharedScale else frontScale
+                        val currentFrontW = baseCardWidth * activeFrontScale
+                        val currentFrontH = baseCardHeight * activeFrontScale
 
                         Box(
                             modifier = Modifier
@@ -1247,7 +1293,9 @@ fun CardLayoutEditorDialog(
                                 model = frontUri,
                                 contentDescription = "Front Card",
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer { rotationZ = frontRotation.toFloat() }
                             )
                             Box(
                                 modifier = Modifier
@@ -1260,8 +1308,9 @@ fun CardLayoutEditorDialog(
                         }
 
                         // Back Card Box
-                        val currentBackW = baseCardWidth * backScale
-                        val currentBackH = baseCardHeight * backScale
+                        val activeBackScale = if (isSizeLinked) sharedScale else backScale
+                        val currentBackW = baseCardWidth * activeBackScale
+                        val currentBackH = baseCardHeight * activeBackScale
 
                         Box(
                             modifier = Modifier
@@ -1284,7 +1333,9 @@ fun CardLayoutEditorDialog(
                                 model = backUri,
                                 contentDescription = "Back Card",
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer { rotationZ = backRotation.toFloat() }
                             )
                             Box(
                                 modifier = Modifier
@@ -1298,7 +1349,7 @@ fun CardLayoutEditorDialog(
                     }
                 }
 
-                // Controls & Size Sliders
+                // Controls Card
                 Card(
                     shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF252525)),
@@ -1309,31 +1360,51 @@ fun CardLayoutEditorDialog(
                             .fillMaxWidth()
                             .padding(14.dp)
                     ) {
-                        // Sliders Row
+                        // Link Size Toggle & Sliders
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Front Slider
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("সামনের কার্ড সাইজ", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Medium)
-                                Slider(
-                                    value = frontScale,
-                                    onValueChange = { frontScale = it },
-                                    valueRange = 0.6f..1.4f,
-                                    colors = SliderDefaults.colors(
-                                        thumbColor = DarkForestGreen,
-                                        activeTrackColor = DarkForestGreen
-                                    )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (isSizeLinked) Icons.Default.Link else Icons.Default.LinkOff,
+                                    contentDescription = null,
+                                    tint = if (isSizeLinked) Color(0xFF28A745) else Color.Gray,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isSizeLinked) "উভয় কার্ড লিঙ্ক সাইজ (সমান)" else "আলাদা আলাদা সাইজ",
+                                    fontSize = 12.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
 
-                            // Back Slider
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("পেছনের কার্ড সাইজ", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Medium)
+                            Button(
+                                onClick = { isSizeLinked = !isSizeLinked },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSizeLinked) DarkForestGreen else Color(0xFF444444)
+                                ),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Text(if (isSizeLinked) "লিঙ্কড" else "আলাদা", fontSize = 11.sp, color = Color.White)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        if (isSizeLinked) {
+                            Column {
+                                Text("উভয় কার্ডের সাইজ এডজাস্ট", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Medium)
                                 Slider(
-                                    value = backScale,
-                                    onValueChange = { backScale = it },
+                                    value = sharedScale,
+                                    onValueChange = {
+                                        sharedScale = it
+                                        frontScale = it
+                                        backScale = it
+                                    },
                                     valueRange = 0.6f..1.4f,
                                     colors = SliderDefaults.colors(
                                         thumbColor = Color(0xFF28A745),
@@ -1341,9 +1412,114 @@ fun CardLayoutEditorDialog(
                                     )
                                 )
                             }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("সামনের সাইজ", fontSize = 11.sp, color = Color.White)
+                                    Slider(
+                                        value = frontScale,
+                                        onValueChange = { frontScale = it },
+                                        valueRange = 0.6f..1.4f,
+                                        colors = SliderDefaults.colors(thumbColor = DarkForestGreen, activeTrackColor = DarkForestGreen)
+                                    )
+                                }
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("পেছনের সাইজ", fontSize = 11.sp, color = Color.White)
+                                    Slider(
+                                        value = backScale,
+                                        onValueChange = { backScale = it },
+                                        valueRange = 0.6f..1.4f,
+                                        colors = SliderDefaults.colors(thumbColor = Color(0xFF28A745), activeTrackColor = Color(0xFF28A745))
+                                    )
+                                }
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Rotation & Alignment Buttons
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { frontRotation = (frontRotation + 90) % 360 },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Icon(Icons.Default.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("সামনে ঘোরাও", fontSize = 11.5.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = { backRotation = (backRotation + 90) % 360 },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Icon(Icons.Default.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("পেছনে ঘোরাও", fontSize = 11.5.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    frontRotation = (frontRotation + 90) % 360
+                                    backRotation = (backRotation + 90) % 360
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Icon(Icons.Default.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("উভয় ঘোরাও", fontSize = 11.5.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    val fW = baseCardWidth * (if (isSizeLinked) sharedScale else frontScale)
+                                    val bW = baseCardWidth * (if (isSizeLinked) sharedScale else backScale)
+                                    frontX = (canvasWidthDp - fW) / 2f
+                                    backX = (canvasWidthDp - bW) / 2f
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Icon(Icons.Default.FormatAlignCenter, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("মাঝখানে", fontSize = 11.5.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    frontX = 20f
+                                    backX = 20f
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Icon(Icons.Default.FormatAlignLeft, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("বাম", fontSize = 11.5.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    val fW = baseCardWidth * (if (isSizeLinked) sharedScale else frontScale)
+                                    val bW = baseCardWidth * (if (isSizeLinked) sharedScale else backScale)
+                                    frontX = canvasWidthDp - fW - 20f
+                                    backX = canvasWidthDp - bW - 20f
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Icon(Icons.Default.FormatAlignRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("ডান", fontSize = 11.5.sp)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         // Action Save Buttons
                         Row(
@@ -1352,9 +1528,11 @@ fun CardLayoutEditorDialog(
                         ) {
                             Button(
                                 onClick = {
-                                    val frontState = CardRectState(frontX, frontY, baseCardWidth, baseCardHeight, frontScale)
-                                    val backState = CardRectState(backX, backY, baseCardWidth, baseCardHeight, backScale)
-                                    onSave(false, frontState, backState, androidx.compose.ui.geometry.Size(canvasWidthDp, canvasHeightDp))
+                                    val actFrontScale = if (isSizeLinked) sharedScale else frontScale
+                                    val actBackScale = if (isSizeLinked) sharedScale else backScale
+                                    val frontState = CardRectState(frontX, frontY, baseCardWidth, baseCardHeight, actFrontScale)
+                                    val backState = CardRectState(backX, backY, baseCardWidth, baseCardHeight, actBackScale)
+                                    onSave(false, frontState, backState, frontRotation, backRotation, androidx.compose.ui.geometry.Size(canvasWidthDp, canvasHeightDp))
                                 },
                                 modifier = Modifier
                                     .weight(1f)
@@ -1367,9 +1545,11 @@ fun CardLayoutEditorDialog(
 
                             Button(
                                 onClick = {
-                                    val frontState = CardRectState(frontX, frontY, baseCardWidth, baseCardHeight, frontScale)
-                                    val backState = CardRectState(backX, backY, baseCardWidth, baseCardHeight, backScale)
-                                    onSave(true, frontState, backState, androidx.compose.ui.geometry.Size(canvasWidthDp, canvasHeightDp))
+                                    val actFrontScale = if (isSizeLinked) sharedScale else frontScale
+                                    val actBackScale = if (isSizeLinked) sharedScale else backScale
+                                    val frontState = CardRectState(frontX, frontY, baseCardWidth, baseCardHeight, actFrontScale)
+                                    val backState = CardRectState(backX, backY, baseCardWidth, baseCardHeight, actBackScale)
+                                    onSave(true, frontState, backState, frontRotation, backRotation, androidx.compose.ui.geometry.Size(canvasWidthDp, canvasHeightDp))
                                 },
                                 modifier = Modifier
                                     .weight(1f)
@@ -1384,6 +1564,467 @@ fun CardLayoutEditorDialog(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun SingleCardCropEditorDialog(
+    imageUri: Uri,
+    sideTitle: String,
+    onDismiss: () -> Unit,
+    onConfirm: (Uri) -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isProcessing by remember { mutableStateOf(false) }
+
+    var rotation by remember { mutableIntStateOf(0) }
+    var flipHorizontal by remember { mutableStateOf(false) }
+    var filterMode by remember { mutableStateOf(ImageFilterMode.MAGIC_COLOR) }
+    var brightness by remember { mutableFloatStateOf(0f) }
+    var contrast by remember { mutableFloatStateOf(1.0f) }
+
+    var cornerTL by remember { mutableStateOf(Offset(0.05f, 0.05f)) }
+    var cornerTR by remember { mutableStateOf(Offset(0.95f, 0.05f)) }
+    var cornerBR by remember { mutableStateOf(Offset(0.95f, 0.95f)) }
+    var cornerBL by remember { mutableStateOf(Offset(0.05f, 0.95f)) }
+
+    fun resetAll() {
+        rotation = 0
+        flipHorizontal = false
+        filterMode = ImageFilterMode.ORIGINAL
+        brightness = 0f
+        contrast = 1.0f
+        cornerTL = Offset(0.05f, 0.05f)
+        cornerTR = Offset(0.95f, 0.05f)
+        cornerBR = Offset(0.95f, 0.95f)
+        cornerBL = Offset(0.05f, 0.95f)
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color(0xFF181818)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Top Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(DarkForestGreen)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, contentDescription = "বাতিল", tint = Color.White)
+                        }
+                        Text(
+                            text = sideTitle,
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = HeadingFontFamily
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { resetAll() }) {
+                            Icon(Icons.Default.RestartAlt, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("রিসেট", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Button(
+                            onClick = {
+                                isProcessing = true
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    val bitmap = loadBitmapFromUri(context, imageUri)
+                                    if (bitmap != null) {
+                                        val w = bitmap.width.toFloat()
+                                        val h = bitmap.height.toFloat()
+                                        val cornersPx = listOf(
+                                            Offset(cornerTL.x * w, cornerTL.y * h),
+                                            Offset(cornerTR.x * w, cornerTR.y * h),
+                                            Offset(cornerBR.x * w, cornerBR.y * h),
+                                            Offset(cornerBL.x * w, cornerBL.y * h)
+                                        )
+                                        val processedUri = processSingleCardBitmap(
+                                            context = context,
+                                            imageUri = imageUri,
+                                            cornersPx = cornersPx,
+                                            imageWidth = bitmap.width,
+                                            imageHeight = bitmap.height,
+                                            rotationDeg = rotation,
+                                            flipHorizontal = flipHorizontal,
+                                            filterMode = filterMode,
+                                            brightness = brightness,
+                                            contrast = contrast
+                                        )
+                                        withContext(Dispatchers.Main) {
+                                            isProcessing = false
+                                            if (processedUri != null) {
+                                                onConfirm(processedUri)
+                                            } else {
+                                                onConfirm(imageUri)
+                                            }
+                                        }
+                                    } else {
+                                        withContext(Dispatchers.Main) {
+                                            isProcessing = false
+                                            onConfirm(imageUri)
+                                        }
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28A745)),
+                            enabled = !isProcessing,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            if (isProcessing) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                            } else {
+                                Text("কনফার্ম", fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+                    }
+                }
+
+                // Interactive Crop Canvas Area
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .background(Color.Black)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = "Card Image",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    rotationZ = rotation.toFloat()
+                                    scaleX = if (flipHorizontal) -1f else 1f
+                                }
+                        )
+
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pointerInput(Unit) {
+                                    detectDragGestures { change, dragAmount ->
+                                        change.consume()
+                                        val w = size.width.toFloat()
+                                        val h = size.height.toFloat()
+                                        if (w > 0 && h > 0) {
+                                            val dx = dragAmount.x / w
+                                            val dy = dragAmount.y / h
+                                            val touchPos = change.position
+                                            val normPos = Offset(touchPos.x / w, touchPos.y / h)
+
+                                            val dTL = (normPos - cornerTL).getDistance()
+                                            val dTR = (normPos - cornerTR).getDistance()
+                                            val dBR = (normPos - cornerBR).getDistance()
+                                            val dBL = (normPos - cornerBL).getDistance()
+
+                                            val minD = minOf(dTL, dTR, dBR, dBL)
+                                            when (minD) {
+                                                dTL -> cornerTL = Offset((cornerTL.x + dx).coerceIn(0f, cornerTR.x - 0.05f), (cornerTL.y + dy).coerceIn(0f, cornerBL.y - 0.05f))
+                                                dTR -> cornerTR = Offset((cornerTR.x + dx).coerceIn(cornerTL.x + 0.05f, 1f), (cornerTR.y + dy).coerceIn(0f, cornerBR.y - 0.05f))
+                                                dBR -> cornerBR = Offset((cornerBR.x + dx).coerceIn(cornerBL.x + 0.05f, 1f), (cornerBR.y + dy).coerceIn(cornerTR.y + 0.05f, 1f))
+                                                dBL -> cornerBL = Offset((cornerBL.x + dx).coerceIn(0f, cornerBR.x - 0.05f), (cornerBL.y + dy).coerceIn(cornerTL.y + 0.05f, 1f))
+                                            }
+                                        }
+                                    }
+                                }
+                        ) {
+                            val w = size.width
+                            val h = size.height
+
+                            val pTL = Offset(cornerTL.x * w, cornerTL.y * h)
+                            val pTR = Offset(cornerTR.x * w, cornerTR.y * h)
+                            val pBR = Offset(cornerBR.x * w, cornerBR.y * h)
+                            val pBL = Offset(cornerBL.x * w, cornerBL.y * h)
+
+                            val cropPath = Path().apply {
+                                moveTo(pTL.x, pTL.y)
+                                lineTo(pTR.x, pTR.y)
+                                lineTo(pBR.x, pBR.y)
+                                lineTo(pBL.x, pBL.y)
+                                close()
+                            }
+
+                            drawPath(
+                                path = cropPath,
+                                color = Color(0xFF28A745),
+                                style = Stroke(width = 3.dp.toPx())
+                            )
+
+                            listOf(pTL, pTR, pBR, pBL).forEach { pos ->
+                                drawCircle(color = Color.White, radius = 14.dp.toPx(), center = pos)
+                                drawCircle(color = Color(0xFF28A745), radius = 10.dp.toPx(), center = pos)
+                            }
+                        }
+                    }
+                }
+
+                // Controls Section
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF222222))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                cornerTL = Offset(0.05f, 0.05f)
+                                cornerTR = Offset(0.95f, 0.05f)
+                                cornerBR = Offset(0.95f, 0.95f)
+                                cornerBL = Offset(0.05f, 0.95f)
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        ) {
+                            Icon(Icons.Default.Crop, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("অটো ক্রপ", fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                cornerTL = Offset(0f, 0f)
+                                cornerTR = Offset(1f, 0f)
+                                cornerBR = Offset(1f, 1f)
+                                cornerBL = Offset(0f, 1f)
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        ) {
+                            Text("ফুল ইমেজ", fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = { rotation = (rotation + 90) % 360 },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        ) {
+                            Icon(Icons.Default.RotateRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("ঘোরাও", fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = { flipHorizontal = !flipHorizontal },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        ) {
+                            Icon(Icons.Default.Flip, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("ফ্লিপ", fontSize = 12.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text("কালার ফিল্টার:", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            ImageFilterMode.MAGIC_COLOR to "ম্যাজিক কালার",
+                            ImageFilterMode.ORIGINAL to "অরিজিনাল",
+                            ImageFilterMode.GRAYSCALE to "গ্রে-স্কেল",
+                            ImageFilterMode.BLACK_WHITE to "ব্ল্যাক & হোয়াইট"
+                        ).forEach { (mode, label) ->
+                            val isSelected = filterMode == mode
+                            Button(
+                                onClick = { filterMode = mode },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSelected) DarkForestGreen else Color(0xFF333333),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(20.dp)
+                            ) {
+                                Text(label, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("উজ্জ্বলতা", fontSize = 11.sp, color = Color.White)
+                            Slider(
+                                value = brightness,
+                                onValueChange = { brightness = it },
+                                valueRange = -80f..80f,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = Color(0xFF28A745),
+                                    activeTrackColor = Color(0xFF28A745)
+                                )
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("কনট্রাস্ট", fontSize = 11.sp, color = Color.White)
+                            Slider(
+                                value = contrast,
+                                onValueChange = { contrast = it },
+                                valueRange = 0.5f..1.5f,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = DarkForestGreen,
+                                    activeTrackColor = DarkForestGreen
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun processSingleCardBitmap(
+    context: Context,
+    imageUri: Uri,
+    cornersPx: List<Offset>,
+    imageWidth: Int,
+    imageHeight: Int,
+    rotationDeg: Int,
+    flipHorizontal: Boolean,
+    filterMode: ImageFilterMode,
+    brightness: Float,
+    contrast: Float
+): Uri? {
+    try {
+        val srcBitmap = loadBitmapFromUri(context, imageUri) ?: return null
+
+        val tl = cornersPx[0]
+        val tr = cornersPx[1]
+        val br = cornersPx[2]
+        val bl = cornersPx[3]
+
+        val targetWidth = maxOf(
+            Math.hypot((tr.x - tl.x).toDouble(), (tr.y - tl.y).toDouble()),
+            Math.hypot((br.x - bl.x).toDouble(), (br.y - bl.y).toDouble())
+        ).toFloat().coerceAtLeast(100f)
+
+        val targetHeight = maxOf(
+            Math.hypot((bl.x - tl.x).toDouble(), (bl.y - tl.y).toDouble()),
+            Math.hypot((br.y - tr.y).toDouble(), (br.y - tr.y).toDouble())
+        ).toFloat().coerceAtLeast(100f)
+
+        val croppedBitmap = Bitmap.createBitmap(targetWidth.toInt(), targetHeight.toInt(), Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(croppedBitmap)
+
+        val matrix = Matrix()
+        val srcPoints = floatArrayOf(
+            tl.x, tl.y,
+            tr.x, tr.y,
+            br.x, br.y,
+            bl.x, bl.y
+        )
+        val dstPoints = floatArrayOf(
+            0f, 0f,
+            targetWidth, 0f,
+            targetWidth, targetHeight,
+            0f, targetHeight
+        )
+        matrix.setPolyToPoly(srcPoints, 0, dstPoints, 0, 4)
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        canvas.drawBitmap(srcBitmap, matrix, paint)
+
+        val editMatrix = Matrix()
+        if (rotationDeg != 0) {
+            editMatrix.postRotate(rotationDeg.toFloat())
+        }
+        if (flipHorizontal) {
+            editMatrix.postScale(-1f, 1f)
+        }
+
+        val rotatedBitmap = if (!editMatrix.isIdentity) {
+            Bitmap.createBitmap(croppedBitmap, 0, 0, croppedBitmap.width, croppedBitmap.height, editMatrix, true)
+        } else {
+            croppedBitmap
+        }
+
+        val finalBitmap = Bitmap.createBitmap(rotatedBitmap.width, rotatedBitmap.height, Bitmap.Config.ARGB_8888)
+        val filterCanvas = Canvas(finalBitmap)
+
+        val colorMatrix = ColorMatrix()
+
+        when (filterMode) {
+            ImageFilterMode.MAGIC_COLOR -> {
+                colorMatrix.set(floatArrayOf(
+                    1.2f, 0f, 0f, 0f, -10f,
+                    0f, 1.2f, 0f, 0f, -10f,
+                    0f, 0f, 1.2f, 0f, -10f,
+                    0f, 0f, 0f, 1f, 0f
+                ))
+            }
+            ImageFilterMode.GRAYSCALE -> {
+                colorMatrix.setSaturation(0f)
+            }
+            ImageFilterMode.BLACK_WHITE -> {
+                colorMatrix.set(floatArrayOf(
+                    1.5f, 1.5f, 1.5f, 0f, -160f,
+                    1.5f, 1.5f, 1.5f, 0f, -160f,
+                    1.5f, 1.5f, 1.5f, 0f, -160f,
+                    0f, 0f, 0f, 1f, 0f
+                ))
+            }
+            ImageFilterMode.ORIGINAL -> {}
+        }
+
+        if (brightness != 0f || contrast != 1f) {
+            val cm = ColorMatrix()
+            val c = contrast
+            val b = brightness
+            cm.set(floatArrayOf(
+                c, 0f, 0f, 0f, b,
+                0f, c, 0f, 0f, b,
+                0f, 0f, c, 0f, b,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            colorMatrix.postConcat(cm)
+        }
+
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        filterCanvas.drawBitmap(rotatedBitmap, 0f, 0f, paint)
+
+        val tempDir = File(context.cacheDir, "cropped_cards")
+        if (!tempDir.exists()) tempDir.mkdirs()
+        val outFile = File(tempDir, "crop_${System.currentTimeMillis()}.jpg")
+        FileOutputStream(outFile).use { out ->
+            finalBitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+        }
+        return Uri.fromFile(outFile)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return null
     }
 }
 
@@ -1603,6 +2244,8 @@ private suspend fun renderAndSaveCardLayout(
     backUri: Uri,
     frontRect: CardRectState,
     backRect: CardRectState,
+    frontRotation: Int = 0,
+    backRotation: Int = 0,
     canvasSizeDp: androidx.compose.ui.geometry.Size,
     asPdf: Boolean
 ): File? = withContext(Dispatchers.IO) {
@@ -1616,8 +2259,20 @@ private suspend fun renderAndSaveCardLayout(
 
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 
-        val frontBitmap = loadBitmapFromUri(context, frontUri)
-        val backBitmap = loadBitmapFromUri(context, backUri)
+        var frontBitmap = loadBitmapFromUri(context, frontUri)
+        var backBitmap = loadBitmapFromUri(context, backUri)
+
+        if (frontBitmap != null && frontRotation != 0) {
+            val matrix = Matrix()
+            matrix.postRotate(frontRotation.toFloat())
+            frontBitmap = Bitmap.createBitmap(frontBitmap, 0, 0, frontBitmap.width, frontBitmap.height, matrix, true)
+        }
+
+        if (backBitmap != null && backRotation != 0) {
+            val matrix = Matrix()
+            matrix.postRotate(backRotation.toFloat())
+            backBitmap = Bitmap.createBitmap(backBitmap, 0, 0, backBitmap.width, backBitmap.height, matrix, true)
+        }
 
         val scaleX = outWidth / canvasSizeDp.width
         val scaleY = outHeight / canvasSizeDp.height
