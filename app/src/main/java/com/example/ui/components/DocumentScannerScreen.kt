@@ -2034,7 +2034,7 @@ private fun detectCardCorners(bitmap: Bitmap): List<Offset> {
         return listOf(Offset(0.05f, 0.05f), Offset(0.95f, 0.05f), Offset(0.95f, 0.95f), Offset(0.05f, 0.95f))
     }
 
-    val maxDim = 300
+    val maxDim = 400
     val scale = minOf(1.0f, maxDim.toFloat() / maxOf(origW, origH))
     val sampleW = (origW * scale).toInt().coerceAtLeast(10)
     val sampleH = (origH * scale).toInt().coerceAtLeast(10)
@@ -2052,13 +2052,28 @@ private fun detectCardCorners(bitmap: Bitmap): List<Offset> {
         lum[i] = (0.299 * r + 0.587 * g + 0.114 * b).toInt()
     }
 
+    // Adaptive threshold: derive from the image's own gradient statistics instead of a
+    // fixed magic number, so busy/low-contrast backgrounds don't flood edgeCandidates
+    // with false positives (which previously made the corner picker snap onto background
+    // clutter instead of the actual document edges).
+    val marginX = (sampleW * 0.03f).toInt().coerceAtLeast(2)
+    val marginY = (sampleH * 0.03f).toInt().coerceAtLeast(2)
+
+    var gradientSum = 0L
+    var gradientCount = 0
+    for (y in marginY + 1 until sampleH - marginY - 1) {
+        for (x in marginX + 1 until sampleW - marginX - 1) {
+            val gx = Math.abs(lum[y * sampleW + (x + 1)] - lum[y * sampleW + (x - 1)])
+            val gy = Math.abs(lum[(y + 1) * sampleW + x] - lum[(y - 1) * sampleW + x])
+            gradientSum += (gx + gy)
+            gradientCount++
+        }
+    }
+    val avgGradient = if (gradientCount > 0) gradientSum.toFloat() / gradientCount else 0f
+    // Require a gradient noticeably above the image's average noise level to count as an edge.
+    val edgeThreshold = (avgGradient * 2.2f).coerceIn(20f, 70f)
+
     val edgeCandidates = ArrayList<Offset>()
-    val edgeThreshold = 25
-
-    // Ignore 2% outer border
-    val marginX = (sampleW * 0.02f).toInt().coerceAtLeast(1)
-    val marginY = (sampleH * 0.02f).toInt().coerceAtLeast(1)
-
     for (y in marginY + 1 until sampleH - marginY - 1) {
         for (x in marginX + 1 until sampleW - marginX - 1) {
             val gx = Math.abs(lum[y * sampleW + (x + 1)] - lum[y * sampleW + (x - 1)])
@@ -2069,7 +2084,11 @@ private fun detectCardCorners(bitmap: Bitmap): List<Offset> {
         }
     }
 
-    if (edgeCandidates.size > 30) {
+    // Require a healthy number of edge points relative to image size before trusting the
+    // detection; otherwise fall back to the safe default rectangle instead of guessing wrong.
+    val minRequiredCandidates = ((sampleW + sampleH) * 0.3f).toInt().coerceAtLeast(30)
+
+    if (edgeCandidates.size > minRequiredCandidates) {
         var minSum = Float.MAX_VALUE
         var maxSum = -Float.MAX_VALUE
         var minDiff = Float.MAX_VALUE
@@ -2517,7 +2536,7 @@ private fun processSingleCardBitmap(
 
         val targetHeight = maxOf(
             Math.hypot((bl.x - tl.x).toDouble(), (bl.y - tl.y).toDouble()),
-            Math.hypot((br.y - tr.y).toDouble(), (br.y - tr.y).toDouble())
+            Math.hypot((br.x - tr.x).toDouble(), (br.y - tr.y).toDouble())
         ).toFloat().coerceAtLeast(100f)
 
         val croppedBitmap = Bitmap.createBitmap(targetWidth.toInt(), targetHeight.toInt(), Bitmap.Config.ARGB_8888)
@@ -3058,7 +3077,7 @@ private suspend fun renderDocumentBitmap(
 
         val targetHeight = maxOf(
             Math.hypot((bl.x - tl.x).toDouble(), (bl.y - tl.y).toDouble()),
-            Math.hypot((br.y - tr.y).toDouble(), (br.y - tr.y).toDouble())
+            Math.hypot((br.x - tr.x).toDouble(), (br.y - tr.y).toDouble())
         ).toFloat().coerceAtLeast(100f)
 
         val croppedBitmap = Bitmap.createBitmap(targetWidth.toInt(), targetHeight.toInt(), Bitmap.Config.ARGB_8888)

@@ -34,7 +34,7 @@ object PrintUtils {
 
     fun printFoodBill(
         context: Context,
-        centerName: String = "আল বারাকা মেডিকেল সেন্টার",
+        centerName: String = "প্রতিষ্ঠানের নাম লিখুন",
         subtitle: String = "দৈনিক খাবার বিল",
         dateString: String,
         items: List<BillItem>,
@@ -104,7 +104,7 @@ object PrintUtils {
 
     fun shareFoodBillPdf(
         context: Context,
-        centerName: String = "আল বারাকা মেডিকেল সেন্টার",
+        centerName: String = "প্রতিষ্ঠানের নাম লিখুন",
         subtitle: String = "দৈনিক খাবার বিল",
         dateString: String,
         items: List<BillItem>,
@@ -134,7 +134,7 @@ object PrintUtils {
             }
             pdfDocument.close()
 
-            sharePdfFile(context, pdfFile, dateString)
+            sharePdfFile(context, pdfFile, dateString, centerName)
         } catch (e: Exception) {
             Toast.makeText(context, "পিডিএফ ফাইল তৈরি ব্যর্থ: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
         }
@@ -473,16 +473,17 @@ object PrintUtils {
         canvas.restore()
     }
 
-    private fun sharePdfFile(context: Context, pdfFile: File, dateString: String) {
+    private fun sharePdfFile(context: Context, pdfFile: File, dateString: String, centerName: String = "") {
         try {
             val authority = "${context.packageName}.fileprovider"
             val contentUri: Uri = FileProvider.getUriForFile(context, authority, pdfFile)
+            val displayName = centerName.ifBlank { "খাবার বিল" }
 
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/pdf"
                 putExtra(Intent.EXTRA_STREAM, contentUri)
                 putExtra(Intent.EXTRA_SUBJECT, "খাবার বিল - $dateString")
-                putExtra(Intent.EXTRA_TEXT, "আল বারাকা মেডিকেল সেন্টার - $dateString তারিখের খাবার বিল।")
+                putExtra(Intent.EXTRA_TEXT, "$displayName - $dateString তারিখের খাবার বিল।")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
@@ -492,6 +493,20 @@ object PrintUtils {
         } catch (e: Exception) {
             Toast.makeText(context, "শেয়ার করতে সমস্যা হয়েছে: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    /**
+     * Escapes text that will be inserted into HTML, so that characters typed by the user
+     * (e.g. "<", ">", "&", quotes in an item name or center name) can never break the
+     * voucher's layout or be interpreted as markup.
+     */
+    private fun escapeHtml(text: String): String {
+        return text
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;")
     }
 
     fun generateHtmlVoucher(
@@ -504,6 +519,9 @@ object PrintUtils {
         approverLabel: String,
         position: PrintPosition = PrintPosition.TOP
     ): String {
+        val safeCenterName = escapeHtml(centerName)
+        val safeSubtitle = escapeHtml(subtitle)
+        val safePurchaserLabel = escapeHtml(purchaserLabel)
         val bengaliDate = BengaliUtils.toBengaliDigits(dateString)
         val bengaliTotal = if (totalAmount <= 0) "0/-" else "${BengaliUtils.formatBengaliCurrency(totalAmount)}/-"
 
@@ -525,7 +543,7 @@ object PrintUtils {
                 rowsHtml.append("""
                     <tr>
                         <td class="sl-col">$slNo</td>
-                        <td class="item-col">${item.name}</td>
+                        <td class="item-col">${escapeHtml(item.name)}</td>
                         <td class="qty-col">$bnQty</td>
                         <td class="rate-col">$bnRate</td>
                         <td class="amount-col">$bnAmount</td>
@@ -548,8 +566,8 @@ object PrintUtils {
             <div class="memo-half">
                 <div class="memo-card">
                     <div class="header-banner">
-                        <h1>$centerName</h1>
-                        <p>$subtitle</p>
+                        <h1>$safeCenterName</h1>
+                        <p>$safeSubtitle</p>
                     </div>
                     <div class="sawtooth-bar"></div>
 
@@ -581,7 +599,7 @@ object PrintUtils {
                     <div class="footer-section">
                         <div class="signatures-row">
                             <div class="sig-box">
-                                ${purchaserLabel.ifBlank { "ক্রয়কারীর স্বাক্ষর" }}
+                                ${safePurchaserLabel.ifBlank { "ক্রয়কারীর স্বাক্ষর" }}
                             </div>
                         </div>
                     </div>

@@ -168,7 +168,7 @@ fun HomeScreen(
                                         else -> if (currentBillState.centerName.isNotBlank())
                                             (if (isEn) "Food Bill - " else "খাবার বিল - ") + currentBillState.centerName
                                         else
-                                            (if (isEn) "Food Bill Memo" else "আল বারাকা খাবার বিল")
+                                            (if (isEn) "Food Bill Memo" else "খাবার বিল মেমো")
                                     }
                                     selectedTool == "doc_scanner" -> if (isEn) "Document Scanner" else "ডকুমেন্ট স্ক্যানার"
                                     else -> if (isEn) "Digital Tools Hub" else "ডিজিটাল টুলস হাব"
